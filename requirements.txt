@@ -1,10 +1,11 @@
 dataclasses
 django
--e git+https://github.com/TOMToolkit/tom_base.git#egg=tomtoolkit
+-e git+https://github.com/TOMToolkit/tom_base.git@development#egg=tomtoolkit
 gunicorn
 django-heroku
 django-storages
 boto3
 astropy==3.2.1
+astroplan
 requests_oauthlib
 python-magic

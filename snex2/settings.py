@@ -55,7 +55,7 @@ INSTALLED_APPS = [
     'custom_code',
 ]
 
-SITE_ID = 1
+SITE_ID = 2
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -266,7 +266,7 @@ HOOKS = {
 }
 
 TOM_ALERT_CLASSES = [
-    'tom_alerts.brokers.mars.MARSBroker',
+    'custom_code.brokers.mars.CustomMARSBroker',
     'tom_alerts.brokers.lasair.LasairBroker',
     ]
 
@@ -290,6 +290,9 @@ DATA_TYPES = (
     ('SPECTROSCOPY', 'Spectroscopy'),
     ('PHOTOMETRY', 'Photometry')
 )
+
+HINTS_ENABLED = False
+HINT_LEVEL = 20
 
 try:
     from local_settings import * # noqa
