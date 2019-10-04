@@ -55,7 +55,7 @@ INSTALLED_APPS = [
     'custom_code',
 ]
 
-SITE_ID = 2
+SITE_ID = 1
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -66,7 +66,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'tom_common.middleware.ExternalServiceMiddleware',
-     'tom_common.middleware.AuthStrategyMiddleware',
+    'tom_common.middleware.AuthStrategyMiddleware',
 ]
 
 ROOT_URLCONF = 'snex2.urls'
@@ -271,10 +271,8 @@ TOM_ALERT_CLASSES = [
     ]
 
 TOM_FACILITY_CLASSES = [
-    #'tom_observations.facilities.gemini.GEMFacility',
-    'custom_code.facilities.gemini_facility.GeminiFacility',
-    #'tom_observations.facilities.lco.LCOFacility',
-    'custom_code.facilities.lco_facility.LCOFacility',
+    'custom_code.facilities.gemini.GeminiFacility',
+    'custom_code.facilities.lco.LCOFacility',
     ]
 
 TOM_HARVESTER_CLASSES = [
@@ -282,8 +280,6 @@ TOM_HARVESTER_CLASSES = [
     'custom_code.harvesters.mars_harvester.MARSHarvester',
     'tom_catalogs.harvesters.simbad.SimbadHarvester',
     'tom_catalogs.harvesters.ned.NEDHarvester',
-    #'tom_catalogs.harvesters.jplhorizons.JPLHorizonsHarvester',
-    #'tom_catalogs.harvesters.mpc.MPCHarvester',
     ]
 
 DATA_TYPES = (
