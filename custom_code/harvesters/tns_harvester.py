@@ -6,7 +6,7 @@ import json
 from collections import OrderedDict
 
 def get(term):
-  api_key = os.environ['SNEXBOT_APIKEY']
+  api_key = os.environ['TNS_APIKEY']
   url = "https://wis-tns.weizmann.ac.il/api/get"
   try:
     get_url = url + '/object'
