@@ -106,3 +106,6 @@ venv.bak/
 
 # PyCharm project settings
 .idea/
+
+# macOS folder attributes
+.DS_Store
