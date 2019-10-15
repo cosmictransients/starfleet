@@ -250,7 +250,6 @@ FACILITIES = {
 EXTRA_FIELDS = [
     {'name': 'redshift', 'type': 'number'},
     {'name': 'classification', 'type': 'string'},
-    {'name': 'tweet', 'type': 'boolean'},
 ]
 
 # Authentication strategy can either be LOCKED (required login for all views)
