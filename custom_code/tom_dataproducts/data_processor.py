@@ -14,7 +14,7 @@ mimetypes.add_type('text/plain', '.table')
 class CustomDataProcessor(DataProcessor):
 
     def _process_spectrum_from_fits(self, data_product):
-        flux, header = fits.getdata(data_product.data.path, header=True)
+        flux, header = fits.getdata(data_product.data.name, header=True)
 
         try:
             flux_constant = Unit(header['BUNIT'])
@@ -46,7 +46,7 @@ class CustomDataProcessor(DataProcessor):
         """
         photometry = {}
 
-        data = ascii.read(data_product.data.path, format='fixed_width')
+        data = ascii.read(data_product.data.name, format='fixed_width')
         if len(data) < 1:
             raise InvalidFileFormatException('Empty table or invalid file type')
 
