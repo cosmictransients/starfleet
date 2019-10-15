@@ -201,7 +201,7 @@ TARGET_TYPE = 'SIDEREAL'
 FACILITIES = {
     'LCO': {
         'portal_url': 'https://observe.lco.global',
-        'api_key': os.environ['LCO_APIKEY'],
+        'api_key': os.getenv('LCO_APIKEY'),
     },
     'GEM': {
         'portal_url': {
