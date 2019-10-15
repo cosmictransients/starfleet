@@ -269,7 +269,12 @@ HOOKS = {
 TOM_ALERT_CLASSES = [
     'custom_code.brokers.mars.CustomMARSBroker',
     'tom_alerts.brokers.lasair.LasairBroker',
+    'tom_alerts.brokers.tns.TNSBroker',
     ]
+
+BROKER_CREDENTIALS = {
+    'TNS_APIKEY': os.getenv('TNS_APIKEY'),
+}
 
 TOM_FACILITY_CLASSES = [
     'custom_code.facilities.gemini.GeminiFacility',
