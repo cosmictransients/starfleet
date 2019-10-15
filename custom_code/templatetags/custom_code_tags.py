@@ -240,32 +240,23 @@ def moon_vis(target):
 
 @register.inclusion_tag('custom_code/spectra.html')
 def spectra_plot(target, dataproduct=None):
-    spectra = []
+    plot_data = []
     spectral_dataproducts = ReducedDatum.objects.filter(target=target, data_type='spectroscopy')
     if dataproduct:
         spectral_dataproducts = DataProduct.objects.get(dataproduct=dataproduct)
     for spectrum in spectral_dataproducts:
         datum = json.loads(spectrum.value)
-        wavelength = []
-        flux = []
-        name = str(spectrum.timestamp).split(' ')[0]
-        for key, value in datum.items():
-            wavelength.append(value['wavelength'])
-            flux.append(float(value['flux']))
-        spectra.append((wavelength, flux, name))
-    plot_data = [
-        go.Scatter(
-            x=spectrum[0],
-            y=spectrum[1],
-            name=spectrum[2]
-        ) for spectrum in spectra]
+        scatter = go.Scatter(x=datum['wavelength'], y=datum['photon_flux'],
+                             name=spectrum.timestamp.strftime('%Y-%m-%d'))
+        plot_data.append(scatter)
+
     layout = go.Layout(
         height=600,
         width=700,
         hovermode='closest',
         xaxis=dict(
-            tickformat="d",
-            title='Wavelength (angstroms)'
+            tickformat=".0f",
+            title='Wavelength (Å)'
         ),
         yaxis=dict(
             tickformat=".1eg",

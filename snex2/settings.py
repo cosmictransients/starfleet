@@ -288,6 +288,8 @@ DATA_TYPES = (
     ('PHOTOMETRY', 'Photometry')
 )
 
+DATA_PROCESSOR_CLASS = 'custom_code.tom_dataproducts.data_processor.CustomDataProcessor'
+
 HINTS_ENABLED = False
 HINT_LEVEL = 20
 
