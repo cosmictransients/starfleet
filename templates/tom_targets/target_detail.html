@@ -34,6 +34,9 @@
       <li class="nav-item">
         <span class="nav-link" data-target="#schedule" data-toggle="tab">Schedule Observations</span>
       </li>
+      <li class="nav-item">
+        <span class="nav-link" data-target="#fleet" data-toggle="tab">FLEET</span>
+      </li>
     </ul>
     <div class="tab-content">
       <div class="tab-pane in active" id="overview">
@@ -74,6 +77,10 @@
         <h4>Schedule Observations</h4>
         {% observing_buttons object %}
         {% moon_vis object %}
+      </div>
+      <div class="tab-pane" id="fleet">
+        <h4>FLEET</h4>
+        {% include 'custom_code/fleet.html' %}
       </div>
     </div>
   </div>
