@@ -1,8 +1,13 @@
 import requests
 import logging
 from astropy.time import Time, TimezoneInfo
-from tom_dataproducts.models import ReducedDatum
+from tom_dataproducts.models import DataProduct, ReducedDatum
 import json
+import os
+from django.core.files import File
+import matplotlib
+matplotlib.use('Agg')  # this must be set before importing FLEET
+from FLEET.data import main_assess
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +80,20 @@ def save_gaia_photometry(target, data, lightcurve_url):
             pass
 
 
+def run_fleet(target):
+    output_filename = f'{target.name}_FLEET.pdf'
+    main_assess(target.name, target.ra, target.dec, output_filename=output_filename,
+                catalog_filename='', lightcurve_filename='', ztf_filename='', image_filename='')
+    dp, created = DataProduct.objects.get_or_create(
+        target=target,
+        data=File(open(output_filename, 'rb')),
+        data_product_type='image_file',
+        product_id=f'{target.name}_FLEET'
+    )
+    dp.save()
+    os.remove(output_filename)
+
+
 def target_post_save(target, created):
     logger.info('Target post save hook: %s created: %s', target, created)
 
@@ -87,3 +106,8 @@ def target_post_save(target, created):
     if gaia_name:
         gaia_data, gaia_url = query_gaia(gaia_name)
         save_gaia_photometry(target, gaia_data, gaia_url)
+
+    try:
+        run_fleet(target)
+    except IndexError:
+        logger.warning(f'FLEET pipeline failed. Is {target} in PS1 3π?')
