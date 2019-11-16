@@ -10,3 +10,4 @@ astroplan
 requests_oauthlib
 python-magic
 specutils
+-e git+https://griffin-h@github.com/gmzsebastian/FLEET.git@master#egg=FLEET
