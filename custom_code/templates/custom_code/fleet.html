@@ -1,1 +1,5 @@
-<img src="/data/{{ target.name }}/none/{{ target.name }}_FLEET.pdf">
+{% if fleet_plot %}
+    <img src="{{ fleet_plot.data.url }}" alt="{{ fleet_plot.get_file_name }}">
+{% else %}
+    <p>No FLEET diagnostic plot has been produced. Is the target too far south?</p>
+{% endif %}

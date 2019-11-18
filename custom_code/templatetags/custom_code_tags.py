@@ -277,3 +277,8 @@ def spectra_plot(target, dataproduct=None):
 @register.inclusion_tag('custom_code/aladin_collapse.html')
 def aladin_collapse(target):
     return {'target': target}
+
+@register.inclusion_tag('custom_code/fleet.html')
+def get_fleet_plot(target):
+    data_product = target.dataproduct_set.filter(product_id=target.name+'_FLEET').last()
+    return {'fleet_plot': data_product}
