@@ -8,6 +8,7 @@ from django.core.files import File
 import matplotlib
 matplotlib.use('Agg')  # this must be set before importing FLEET
 from FLEET.data import main_assess
+import threading
 
 logger = logging.getLogger(__name__)
 
@@ -84,14 +85,18 @@ def run_fleet(target):
     output_filename = f'{target.name}_FLEET.pdf'
     main_assess(target.name, target.ra, target.dec, output_filename=output_filename,
                 catalog_filename='', lightcurve_filename='', ztf_filename='', image_filename='')
-    dp, created = DataProduct.objects.get_or_create(
-        target=target,
-        data=File(open(output_filename, 'rb')),
-        data_product_type='image_file',
-        product_id=f'{target.name}_FLEET'
-    )
-    dp.save()
-    os.remove(output_filename)
+    if os.path.exists(output_filename):
+        dp, created = DataProduct.objects.get_or_create(
+            target=target,
+            data=File(open(output_filename, 'rb')),
+            data_product_type='image_file',
+            product_id=f'{target.name}_FLEET'
+        )
+        dp.save()
+        os.remove(output_filename)
+        logger.info(f'{output_filename} saved')
+    else:
+        logger.warning(f'FLEET pipeline failed. Is {target} in PS1 3π?')
 
 
 def target_post_save(target, created):
@@ -107,7 +112,5 @@ def target_post_save(target, created):
         gaia_data, gaia_url = query_gaia(gaia_name)
         save_gaia_photometry(target, gaia_data, gaia_url)
 
-    try:
-        run_fleet(target)
-    except IndexError:
-        logger.warning(f'FLEET pipeline failed. Is {target} in PS1 3π?')
+    fleet_thread = threading.Thread(target=run_fleet, args=[target])
+    fleet_thread.start()
