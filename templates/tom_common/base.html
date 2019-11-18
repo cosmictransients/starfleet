@@ -30,7 +30,7 @@
           <li class="nav-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
             <a class="nav-link" href="/" style="font-family: 'Montserrat', sans-serif;">Home <span class="sr-only">(current)</span></a>
           </li>
-          <li class="nav-item {% if request.resolver_match.namespace == 'targets' %}active{% endif %}">
+          <li class="nav-item {% if request.resolver_match.url_name == 'targets' %}active{% endif %}">
             <a class="nav-link" href="{% url 'targets:list' %}" style="font-family: 'Montserrat', sans-serif;">Targets</a>
           </li>
           <li class="nav-item {% if request.resolver_match.namespace == 'alerts' %}active{% endif %}">
@@ -45,7 +45,7 @@
           <li class="nav-item {% if 'user' in request.resolver_match.url_name %}active{% endif %}">
             <a class="nav-link" href="{% url 'user-list' %}" style="font-family: 'Montserrat', sans-serif;">Users</a>
           </li>
-          <li class="nav-item {% if request.resolver_match.namespace == 'custom_code' %}active{% endif %}">
+          <li class="nav-item {% if request.resolver_match.url_name == 'tns-targets' %}active{% endif %}">
               <a class="nav-link" href="{% url 'custom_code:tns-targets' %}" style="font-family: 'Montserrat', sans-serif;">TNS Targets</a>
           </li>
         </ul>
