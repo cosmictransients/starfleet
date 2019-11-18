@@ -109,3 +109,6 @@ venv.bak/
 
 # macOS folder attributes
 .DS_Store
+
+# custom
+src/
