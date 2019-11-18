@@ -82,7 +82,7 @@ def save_gaia_photometry(target, data, lightcurve_url):
 
 
 def run_fleet(target):
-    output_filename = f'{target.name}_FLEET.pdf'
+    output_filename = f'{target.name}_FLEET.svg'
     main_assess(target.name, target.ra, target.dec, output_filename=output_filename,
                 catalog_filename='', lightcurve_filename='', ztf_filename='', image_filename='')
     if os.path.exists(output_filename):
