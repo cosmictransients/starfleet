@@ -19,6 +19,6 @@ from django.urls import path
 from django.urls import include
 
 urlpatterns = [
-    path('', include('tom_common.urls')),
-    path('snex2/', include('custom_code.urls'))
+    path('', include('custom_code.urls')),
+    path('', include('tom_common.urls'))
 ]

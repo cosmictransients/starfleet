@@ -1,5 +1,6 @@
 from django_filters.views import FilterView
 
+from tom_targets.views import TargetListView
 from custom_code.models import TNSTarget
 from custom_code.filters import TNSTargetFilter
 
@@ -63,3 +64,7 @@ class TNSTargets(FilterView):
             target.mag_recent = make_magrecent(target.all_phot, jd_now)
             target.link = TNS_URL + target.name
         return context
+
+
+class MyTargetListView(TargetListView):
+    template_name = 'custom_code/target_list.html'
