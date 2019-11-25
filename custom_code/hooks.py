@@ -1,6 +1,7 @@
 import requests
 import logging
 from astropy.time import Time, TimezoneInfo
+from astropy.coordinates import SkyCoord
 from tom_dataproducts.models import DataProduct, ReducedDatum
 import json
 import os
@@ -101,6 +102,11 @@ def run_fleet(target):
 
 def target_post_save(target, created):
     logger.info('Target post save hook: %s created: %s', target, created)
+
+    coords = SkyCoord(target.ra, target.dec, unit='deg')
+    target.galactic_lng = coords.galactic.l.deg
+    target.galactic_lat = coords.galactic.b.deg
+    target.save_base()
 
     ztf_name = next((name for name in target.names if 'ZTF' in name), None)
     if ztf_name:
