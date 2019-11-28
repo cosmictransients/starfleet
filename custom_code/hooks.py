@@ -9,78 +9,12 @@ from django.core.files import File
 import matplotlib
 matplotlib.use('Agg')  # this must be set before importing FLEET
 from FLEET.data import main_assess
+from FLEET.imported import generate_lightcurve
+import numpy as np
 import threading
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-
-def query_mars(objectId):
-    url = 'https://mars.lco.global/'
-    request = {'queries': [{'objectId': objectId}]}
-
-    try:
-        r = requests.post(url, json=request)
-        results = r.json()['results'][0]['results']
-        return results
-
-    except Exception as e:
-        return [None, 'Error message : \n' + str(e)]
-
-
-def save_ztf_photometry(target, alerts):
-    filters = {1: 'g_ZTF', 2: 'r_ZTF', 3: 'i_ZTF'}
-    for alert in alerts:
-        if all([key in alert['candidate'] for key in ['jd', 'magpsf', 'fid', 'sigmapsf']]):
-            jd = Time(alert['candidate']['jd'], format='jd', scale='utc')
-            jd.to_datetime(timezone=TimezoneInfo())
-            value = {
-                'magnitude': alert['candidate']['magpsf'],
-                'filter': filters[alert['candidate']['fid']],
-                'error': alert['candidate']['sigmapsf']
-            }
-            rd, created = ReducedDatum.objects.get_or_create(
-                timestamp=jd.to_datetime(timezone=TimezoneInfo()),
-                value=json.dumps(value),
-                source_name=target.name,
-                source_location=alert['lco_id'],
-                data_type='photometry',
-                target=target)
-            rd.save()
-
-
-def query_gaia(gaia_name):
-    base_url = 'http://gsaweb.ast.cam.ac.uk/alerts/alert'
-    lightcurve_url = f'{base_url}/{gaia_name}/lightcurve.csv'
-
-    response = requests.get(lightcurve_url)
-    data = response._content.decode('utf-8').split('\n')[2:-2]
-    return data, lightcurve_url
-
-
-def save_gaia_photometry(target, data, lightcurve_url):
-    jd = [x.split(',')[1] for x in data]
-    mag = [x.split(',')[2] for x in data]
-
-    for i in reversed(range(len(mag))):
-        try:
-            datum_mag = float(mag[i])
-            datum_jd = Time(float(jd[i]), format='jd', scale='utc')
-            value = {
-                'magnitude': datum_mag,
-                'filter': 'G_Gaia',
-                'error': 0  # for now
-            }
-            rd, created = ReducedDatum.objects.get_or_create(
-                timestamp=datum_jd.to_datetime(timezone=TimezoneInfo()),
-                value=json.dumps(value),
-                source_name=target.name,
-                source_location=lightcurve_url,
-                data_type='photometry',
-                target=target)
-            rd.save()
-        except:
-            pass
 
 
 def run_fleet(target):
@@ -117,6 +51,40 @@ def run_fleet(target):
         logger.warning(f'FLEET pipeline failed. Is {target} in PS1 3π?')
 
 
+def fleet_lightcurve(target):
+    lc, tns_name, ztf_name, redshift, snclass, discoverer = generate_lightcurve(target.name, target.ra, target.dec,
+                                                                                output_filename='', ztf_filename='')
+    names = []
+    if tns_name != '--' and tns_name not in target.names and tns_name.replace('AT', 'SN') not in target.names:
+        names.append(tns_name)
+    if ztf_name != '--' and ztf_name not in target.names:
+        names.append(ztf_name)
+    extras = {}
+    if not np.isnan(redshift) and not target.extra_fields.get('redshift'):
+        extras['redshift'] = redshift
+    if snclass != '--' and not target.extra_fields.get('classification'):
+        extras['classification'] = snclass
+    target.save(names=names, extras=extras)
+
+    for datum in lc:
+        time = Time(datum['MJD'], format='mjd')
+        value = {
+            'magnitude': datum['Mag'],
+            'error': datum['MagErr'],
+            'telescope': datum['Telescope'],
+            'filter': datum['Filter'],
+            'upperlimit': datum['UL']
+        }
+        rd, created = ReducedDatum.objects.get_or_create(
+            target=target,
+            data_type='photometry',
+            timestamp=time.datetime,
+            value=json.dumps(value),
+            source_name=datum['Source']
+        )
+        rd.save()
+
+
 def target_post_save(target, created):
     logger.info('Target post save hook: %s created: %s', target, created)
 
@@ -125,16 +93,7 @@ def target_post_save(target, created):
     target.galactic_lat = coords.galactic.b.deg
     target.save_base()
 
-    ztf_name = next((name for name in target.names if 'ZTF' in name), None)
-    if ztf_name:
-        ztf_alerts = query_mars(ztf_name)
-        save_ztf_photometry(target, ztf_alerts)
-
-    gaia_name = next((name for name in target.names if 'Gaia' in name), None)
-    if gaia_name:
-        gaia_data, gaia_url = query_gaia(gaia_name)
-        save_gaia_photometry(target, gaia_data, gaia_url)
-
     if created:
+        fleet_lightcurve(target)
         fleet_thread = threading.Thread(target=run_fleet, args=[target])
         fleet_thread.start()
