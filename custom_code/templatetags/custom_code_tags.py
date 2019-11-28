@@ -1,6 +1,7 @@
 from plotly import offline
 import plotly.graph_objs as go
 from django import template
+from django.utils.safestring import mark_safe
 
 from tom_targets.models import Target
 from tom_targets.forms import TargetVisibilityForm
@@ -282,3 +283,40 @@ def aladin_collapse(target):
 def get_fleet_plot(target):
     data_product = target.dataproduct_set.filter(product_id=target.name+'_FLEET').last()
     return {'fleet_plot': data_product}
+
+@register.filter
+def photometry(target):
+    return target.reduceddatum_set.filter(data_type='photometry')
+
+@register.filter
+def magformat(reduceddatum, digits='1'):
+    if reduceddatum and reduceddatum.data_type == 'photometry':
+        phot = json.loads(reduceddatum.value)
+        magstr = '{{filter}}&nbsp;=&nbsp;{{magnitude:.{digits}f}}'
+        return mark_safe(magstr.format(digits=digits).format(**phot))
+    else:
+        return ''
+
+@register.filter
+def magerrformat(reduceddatum, digits='1'):
+    if reduceddatum and reduceddatum.data_type == 'photometry':
+        phot = json.loads(reduceddatum.value)
+        magstr = '{{filter}}&nbsp;=&nbsp;{{magnitude:.{digits}f}}&nbsp;&pm;&nbsp;{{error:.{digits}f}}'
+        return mark_safe(magstr.format(digits=digits).format(**phot))
+    else:
+        return ''
+
+@register.filter
+def brightest(phot):
+    if phot:
+        mags = [json.loads(point.value)['magnitude'] for point in phot]
+        return phot[int(np.argmin(mags))]
+    else:
+        return ''
+
+@register.filter
+def unit(value, unit):
+    if value:
+        return value + unit
+    else:
+        return ''

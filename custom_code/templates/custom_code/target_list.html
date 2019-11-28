@@ -1,74 +1,82 @@
 {% extends 'tom_common/base.html' %}
-{% load bootstrap4 targets_extras %}
+{% load bootstrap4 targets_extras custom_code_tags %}
 {% block title %}Targets{% endblock %}
 {% block content %}
 <div class="row">
-  <div class="col-md-10">
-    <div class="row">
-      <div class="col-md-12">
-        <span class="float-right">
-        {{ target_count }} Targets &nbsp;
-        <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-          Create Targets
-        </button>
-        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-          <a class="dropdown-item" href="{% url 'targets:create' %}" title="Create a Target">Create a Target</a>
-          <a class="dropdown-item" href="{% url 'targets:import' %}" title="Import Targets">Import Targets</a>
-          <a class="dropdown-item" href="{% url 'tom_catalogs:query' %}" title="Catalog Search">Catalog Search</a>
-        </div>
-        <a href="{% url 'dataproducts:update-reduced-data' %}" class="btn btn-primary" title="Update Targets">Update Targets</a>
-        <button onclick="document.getElementById('invisible-export-button').click()" class="btn btn-primary">Export Filtered Targets</button>
-         <!-- use an invisible button, because the key "Enter" event will triggered the first submit button and we want the default action to be applying filter -->
-      </span>
-      </div>
-    </div>
+  <div class="col-md-12">
     {% select_target_js %}
-    {% bootstrap_pagination page_obj extra=request.GET.urlencode %}
     <label id="displaySelected"></label>
     <button id="optionSelectAll" type="button" class="btn btn-link" onClick="select_all({{ target_count }})"></button>
-    <form id="grouping-form" action="{% url 'targets:add-remove-grouping' %}" method="POST">
-      {% csrf_token %}
-      <div class="form-group d-flex justify-content-end align-items-baseline">
-        <label>Add/Remove from grouping</label>
-        <select name="grouping" class="form-control w-25 ml-1">
-          {% for grouping in groupings %}
-          <option value="{{ grouping.id }}">{{ grouping.name }}</option>
-          {% endfor %}
-        </select>
-        <input type="hidden" value="{{ query_string }}" name="query_string">
-        <input type="hidden" value="False" id="isSelectAll" name="isSelectAll">
-        <button type="submit" class="btn btn-outline-primary ml-1" name="add">Add</button>
-        <button type="submit" class="btn btn-outline-danger ml-1" name="remove">Remove</button>
+    <span class="float-right">
+      {{ target_count }} Targets &nbsp;
+      <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        Create Targets
+      </button>
+      <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+        <a class="dropdown-item" href="{% url 'targets:create' %}" title="Create a Target">Create a Target</a>
+        <a class="dropdown-item" href="{% url 'targets:import' %}" title="Import Targets">Import Targets</a>
+        <a class="dropdown-item" href="{% url 'tom_catalogs:query' %}" title="Catalog Search">Catalog Search</a>
       </div>
+      <a href="{% url 'dataproducts:update-reduced-data' %}" class="btn btn-primary" title="Update Targets">Update Targets</a>
+      <button data-toggle="collapse" data-target="#filterform" class="btn btn-primary">Filter Targets</button>
+      <button onclick="document.getElementById('invisible-export-button').click()" class="btn btn-primary">Export Filtered Targets</button>
+       <!-- use an invisible button, because the key "Enter" event will triggered the first submit button and we want the default action to be applying filter -->
+    </span>
+    <div class="collapse" id="filterform">
+      <form action="" method="get" class="form">
+        {% bootstrap_form filter.form %}
+        {% buttons %}
+          <button type="submit" class="btn btn-primary">
+            Filter
+          </button>
+          <a href="{% url 'targets:list' %}" class="btn btn-secondary" title="Reset">Reset</a>
+          <button type="submit" formaction="{% url 'targets:export' %}" id="invisible-export-button" style="display:none"></button>
+        {% endbuttons %}
+      </form>
+    </div>
+    {% bootstrap_pagination page_obj extra=request.GET.urlencode %}
+    <form id="grouping-form" action="{% url 'targets:add-remove-grouping' %}" method="POST">
       <table class="table table-hover">
         <thead>
           <tr>
             <th><input type="checkbox" id="selectPage" onClick="select_page(this, {{ target_count }})" /></th>
             <th>Name</th>
-            <th>Type</th>
-            {% if request.GET.type == 'SIDEREAL' %}
-            <th>RA</th>
-            <th>Dec</th>
-            {% endif %}
-            <th>Observations</th>
-            <th>Saved Data</th>
+            <th>Class.</th>
+            <th>Gal. Lat.</th>
+            <th>Crowd.</th>
+            <th>Phot.</th>
+            <th>First Mag.</th>
+            <th>Peak Mag.</th>
+            <th>Latest Mag.</th>
+            <th>Time Since Obs.</th>
+            <th>Close &Delta;m</th>
+            <th>Best &Delta;m</th>
+            <th>Close &Delta;&theta;</th>
+            <th>Best &Delta;&theta;</th>
           </tr>
         </thead>
         <tbody>
           {% for target in object_list %}
+          {% with target|photometry as photometry %}
           <tr>
             <td><input type="checkbox" name="selected-target" value="{{ target.id }}" onClick="single_select()"/></td>
             <td>
                 <a href="{% url 'targets:detail' target.id %}" title="{{ target.name }}">{{ target.names|join:", " }}</a>
             </td>
-            <td>{{ target.get_type_display }}</td>
-            {% if request.GET.type == 'SIDEREAL' %}
-            <td>{{ target.ra }}</td>
-            <td>{{ target.dec }}</td>
-            {% endif %}
-            <td>{{ target.observationrecord_set.count }}</td>
-            <td>{{ target.dataproduct_set.count }}</td>
+            <td>{{ target.extra_fields.classification }}</td>
+            <td>{{ target.galactic_lat|floatformat:"0"|unit:"&deg;" }}</td>
+            <td>{{ target|target_extra_field:"crowdiness"|floatformat:"1" }}</td>
+            <td>{{ photometry.count }}</td>
+            <td>{{ photometry.earliest|magformat }}</td>
+            <td>{{ photometry|brightest|magformat }}</td>
+            <td>{{ photometry.latest|magformat }}</td>
+            <td>{{ photometry.latest.timestamp|timesince }}</td>
+            <td>{{ target|target_extra_field:"deltamag_closest"|floatformat:"1" }}</td>
+            <td>{{ target|target_extra_field:"deltamag_best"|floatformat:"1" }}</td>
+            <td>{{ target|target_extra_field:"separation_closest"|floatformat:"1"|unit:"&Prime;" }}</td>
+            <td>{{ target|target_extra_field:"separation_best"|floatformat:"1"|unit:"&Prime;" }}</td>
           </tr>
+          {% endwith %}
           {% empty %}
           <tr>
             <td colspan="5">
@@ -83,21 +91,22 @@
           {% endfor %}
         </tbody>
       </table>
+      {% csrf_token %}
+      <div class="form-group d-flex justify-content-end align-items-baseline">
+        <label>Add/Remove from grouping</label>
+        <select name="grouping" class="form-control w-25 ml-1">
+          {% for grouping in groupings %}
+          <option value="{{ grouping.id }}">{{ grouping.name }}</option>
+          {% endfor %}
+        </select>
+        <input type="hidden" value="{{ query_string }}" name="query_string">
+        <input type="hidden" value="False" id="isSelectAll" name="isSelectAll">
+        <button type="submit" class="btn btn-outline-primary ml-1" name="add">Add</button>
+        <button type="submit" class="btn btn-outline-danger ml-1" name="remove">Remove</button>
+      </div>
     </form>
     {% bootstrap_pagination page_obj extra=request.GET.urlencode %}
   </div>
   {{ filter.fields }}
-  <div class="col-md-2">
-    <form action="" method="get" class="form">
-      {% bootstrap_form filter.form %}
-      {% buttons %}
-        <button type="submit" class="btn btn-primary">
-          Filter
-        </button>
-        <a href="{% url 'targets:list' %}" class="btn btn-secondary" title="Reset">Reset</a>
-        <button type="submit" formaction="{% url 'targets:export' %}" id="invisible-export-button" style="display:none"></button>
-      {% endbuttons %}
-    </form>
-  </div>
 </div>
 {% endblock %}
