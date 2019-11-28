@@ -11,5 +11,5 @@ requests_oauthlib
 python-magic
 specutils
 -e git+https://github.com/dfm/casjobs@master#egg=casjobs
--e git+https://github.com/rlwastro/mastcasjobs@master#egg=mastcasjobs
+-e git+https://github.com/griffin-h/mastcasjobs@master#egg=mastcasjobs
 -e git+ssh://git@github.com/gmzsebastian/FLEET.git@tom_compatible#egg=FLEET
