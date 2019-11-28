@@ -85,8 +85,8 @@ def save_gaia_photometry(target, data, lightcurve_url):
 
 def run_fleet(target):
     output_filename = f'{target.name}_FLEET.svg'
-    main_assess(target.name, target.ra, target.dec, output_filename=output_filename,
-                catalog_filename='', lightcurve_filename='', ztf_filename='', image_filename='')
+    t_assess = main_assess(target.name, target.ra, target.dec, output_filename=output_filename,
+                           catalog_filename='', lightcurve_filename='', ztf_filename='', image_filename='')
     if os.path.exists(output_filename):
         logger.info(f'FLEET pipeline finished for {target}.')
         dp, created = DataProduct.objects.get_or_create(
@@ -102,6 +102,17 @@ def run_fleet(target):
             os.replace(output_filename, dp.data.path)
             logger.info(f'{output_filename} replaced')
         dp.save()
+
+        extras = {
+            'crowdiness': t_assess['crowdiness'][0],
+            'deltamag_closest': t_assess['deltamag'][0],
+            'deltamag_best': t_assess['deltamag'][1],
+            'deltamag_second': t_assess['deltamag'][2],
+            'separation_closest': t_assess['separation'][0],
+            'separation_best': t_assess['separation'][1],
+            'separation_second': t_assess['separation'][2],
+        }
+        target.save(extras=extras)
     else:
         logger.warning(f'FLEET pipeline failed. Is {target} in PS1 3π?')
 
