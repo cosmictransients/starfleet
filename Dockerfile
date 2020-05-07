@@ -6,6 +6,6 @@ RUN apt-get update && apt-get install -y git libpq-dev gcc gfortran libmagic-dev
 
 COPY . /snex2
 
-RUN pip install numpy && pip install -r /snex2/requirements.txt
+RUN pip install numpy && pip install -r /snex2/requirements.txt && pip install /snex2/FLEET
 
 WORKDIR /snex2
