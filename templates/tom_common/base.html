@@ -16,11 +16,11 @@
 
     {% bootstrap_javascript jquery='True' %}
 
-    <title>SNEx 2.0 | {% block title %}{% endblock %}</title>
+    <title>Starfleet | {% block title %}{% endblock %}</title>
   </head>
   <body>
     <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
-      <a class="navbar-brand" href="/" style="font-family: 'Montserrat', sans-serif;"><img src="{% static 'tom_common/img/icon.png' %}" class="img-fluid">SNEx 2.0</a>
+      <a class="navbar-brand" href="/"><img src="{% static 'tom_common/img/icon.png' %}" class="img-fluid">&nbsp;Starfleet</a>
       <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -28,44 +28,45 @@
       <div class="collapse navbar-collapse" id="navbarsExampleDefault">
         <ul class="navbar-nav mr-auto">
           <li class="nav-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
-            <a class="nav-link" href="/" style="font-family: 'Montserrat', sans-serif;">Home <span class="sr-only">(current)</span></a>
+            <a class="nav-link" href="/">Home <span class="sr-only">(current)</span></a>
           </li>
           <li class="nav-item {% if request.resolver_match.url_name == 'targets' %}active{% endif %}">
-            <a class="nav-link" href="{% url 'targets:list' %}" style="font-family: 'Montserrat', sans-serif;">Targets</a>
+            <a class="nav-link" href="{% url 'targets:list' %}">Targets</a>
           </li>
           <li class="nav-item {% if request.resolver_match.namespace == 'alerts' %}active{% endif %}">
-            <a class="nav-link" href="{% url 'alerts:list' %}" style="font-family: 'Montserrat', sans-serif;">Alerts</a>
+            <a class="nav-link" href="{% url 'alerts:list' %}">Alerts</a>
           </li>
           <li class="nav-item {% if request.resolver_match.namespace == 'observations' %}active{% endif %}">
-              <a class="nav-link" href="{% url 'tom_observations:list' %}" style="font-family: 'Montserrat', sans-serif;">Observations</a>
+              <a class="nav-link" href="{% url 'tom_observations:list' %}">Observations</a>
           </li>
           <li class="nav-item {% if request.resolver_match.namespace == 'dataproducts' %}active{% endif %}">
-              <a class="nav-link" href="{% url 'tom_dataproducts:list' %}" style="font-family: 'Montserrat', sans-serif;">Data</a>
+              <a class="nav-link" href="{% url 'tom_dataproducts:list' %}">Data</a>
           </li>
           <li class="nav-item {% if 'user' in request.resolver_match.url_name %}active{% endif %}">
-            <a class="nav-link" href="{% url 'user-list' %}" style="font-family: 'Montserrat', sans-serif;">Users</a>
+            <a class="nav-link" href="{% url 'user-list' %}">Users</a>
           </li>
           <li class="nav-item {% if request.resolver_match.url_name == 'tns-targets' %}active{% endif %}">
-              <a class="nav-link" href="{% url 'custom_code:tns-targets' %}" style="font-family: 'Montserrat', sans-serif;">TNS Targets</a>
+              <a class="nav-link" href="{% url 'custom_code:tns-targets' %}">TNS&nbsp;Targets</a>
           </li>
         </ul>
         <ul class="navbar-nav ml-auto">
         {% if user.is_authenticated %}
           <li class="nav-item">
             {% if user.first_name or user.last_name %}
-            <a class="nav-link" href="{% url 'user-update' user.id %}" style="font-family: 'Montserrat', sans-serif;">{{ user.first_name }} {{ user.last_name }}</a>
+            <a class="nav-link" href="{% url 'user-update' user.id %}">{{ user.first_name }}&nbsp;{{ user.last_name }}</a>
             {% else %}
-            <a class="nav-link" href="{% url 'user-update' user.id %}" style="font-family: 'Montserrat', sans-serif;">User {{ user.id }}</a>
+            <a class="nav-link" href="{% url 'user-update' user.id %}">User&nbsp;{{ user.id }}</a>
             {% endif %}
           </li>
           <li>
-            <a class="btn btn-outline-success" title="logout" href="{% url 'logout' %}" style="font-family: 'Montserrat', sans-serif;">Logout</a>
+            <a class="btn btn-outline-success" title="logout" href="{% url 'logout' %}">Logout</a>
           </li>
         {% else %}
           <li class="nav-item">
-            <a class="btn btn-outline-success" title="logout" href="{% url 'login' %}" style="font-family: 'Montserrat', sans-serif;">Login</a>
+            <a class="btn btn-outline-success" title="logout" href="{% url 'login' %}">Login</a>
           </li>
         {% endif %}
+        </ul>
       </div>
     </nav>
 

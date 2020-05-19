@@ -1,30 +1,15 @@
 {% extends 'tom_common/base.html' %}
 {% load static targets_extras tom_common_extras %}
 {% block title %}Home{% endblock %}
-{% block additional_css %}
-<link rel="stylesheet" href="{% static 'tom_common/css/main.css' %}">
-{% endblock %}
 {% block content %}
 <div class="row">
   <div class="col-md-8">
-    <h2 class="text-center">SNEx 2.0</h2>
-    <p class="text-center"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/Supernova_in_M101_2011-08-25.jpg/546px-Supernova_in_M101_2011-08-25.jpg" class="img-fluid mx-auto"></p>
-    <p class="text-center"; style="font-size:16px">
-    Welcome to SNEx 2.0, an updated version of the 
-    <a href="https://supernova.exchange">Supernova Exchange</a>
-    built using the 
-    <a href="https://tomtoolkit.github.io/">TOM Toolkit</a>.
-    Github 
-    <a href="https://github.com/jfrostburke/snex2">here</a>.
-    To build your own TOM (Target Observation Manager), check out the 
-    <a href="https://tomtoolkit.github.io/docs/getting_started">getting started guide</a>.
-    </p>
-    <p class="text-center"; style="font-size:16px">
-    The Supernova Exchange (2.0) is an interface for viewing and sharing observational
-    data of supernovae, and for requesting and managing observations
-    with the 
-    <a href="https://lco.global/">LCO</a> network.
-    </p>
+    <h2>Welcome to Starfleet</h2>
+    <p>Sift through the alert river to find luminous and exotic extragalactic transients.</p>
+    <a href="https://hirise.lpl.arizona.edu/ESP_059708_1305" title="Dune Footprints in Hellas">
+      <img src="https://pbs.twimg.com/media/D84FPOtU8AAHOGB.jpg" alt="Dune Footprints in Hellas" class="img-fluid" />
+    </a>
+    <p style="font-size: 8pt">Image: NASA/JPL/UArizona</p>
   </div>
   <div class="col-md-4">
     <div class="card">
@@ -39,6 +24,7 @@
         Latest Targets
       </div>
       {% recent_targets %}
+    </div>
   </div>
 </div>
 {% endblock %}
