@@ -103,7 +103,7 @@ if os.environ.get('SNEX2_DB_BACKEND') == 'postgres':
             'NAME': os.environ['SNEX2_DB_NAME'],
             'USER': os.environ['SNEX2_DB_USER'],
             'PASSWORD': os.environ['SNEX2_DB_PASSWORD'],
-            'HOST': 'snex2-db',
+            'HOST': os.environ['SNEX2_DB_HOST'],
             'PORT': 5432,
         }
     }
