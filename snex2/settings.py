@@ -100,7 +100,6 @@ if os.environ.get('SNEX2_DB_BACKEND') == 'postgres':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': 'snex2',
             'NAME': os.environ['SNEX2_DB_NAME'],
             'USER': os.environ['SNEX2_DB_USER'],
             'PASSWORD': os.environ['SNEX2_DB_PASSWORD'],
