@@ -7,7 +7,7 @@ from collections import OrderedDict
 
 def get(term):
   api_key = os.environ['TNS_APIKEY']
-  url = "https://wis-tns.weizmann.ac.il/api/get"
+  url = "https://www.wis-tns.org/api/get"
   try:
     get_url = url + '/object'
     
@@ -35,7 +35,7 @@ class TNSHarvester(AbstractHarvester):
         target = super().to_target()
         target.type = 'SIDEREAL'
         target.identifier = (self.catalog_data['name_prefix'] +
-            self.catalog_data['name'])
+            self.catalog_data['objname'])
         target.name = target.identifier
         target.ra = self.catalog_data['radeg']
         target.dec = self.catalog_data['decdeg']

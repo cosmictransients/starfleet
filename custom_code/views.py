@@ -56,7 +56,7 @@ class TNSTargets(FilterView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         jd_now = Time(datetime.utcnow()).jd
-        TNS_URL = "https://wis-tns.weizmann.ac.il/object/"
+        TNS_URL = "https://www.wis-tns.org/object/"
         for target in context['object_list']:
             target.coords = make_coords(target.ra, target.dec)
             target.mag_lnd = make_lnd(target.lnd_maglim,
