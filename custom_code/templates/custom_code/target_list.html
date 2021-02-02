@@ -1,7 +1,18 @@
 {% extends 'tom_common/base.html' %}
-{% load bootstrap4 targets_extras custom_code_tags %}
+{% load bootstrap4 targets_extras static custom_code_tags%}
 {% block title %}Targets{% endblock %}
+{% block additional_css %}
+<link rel="stylesheet" href="{% static 'tom_targets/css/targets_snexclone.css' %}">
+{% endblock %}
 {% block content %}
+<head>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<nav class="navbar navbar-expand-md fixed-top fixed-top-2">
+  <div class="collapse navbar-collapse" id="targetInfo">
+    <h3>Targets</h3>
+  </div>
+</nav>
 <div class="row">
   <div class="col-md-12">
     {% select_target_js %}
