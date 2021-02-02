@@ -1,6 +1,6 @@
 dataclasses
 django
-tomtoolkit==1.2.2
+tomtoolkit
 gunicorn
 django-heroku
 django-storages
@@ -14,3 +14,6 @@ specutils
 -e git+https://github.com/griffin-h/mastcasjobs@master#egg=mastcasjobs
 dustmaps
 whitenoise
+sqlalchemy
+dash
+django_plotly_dash

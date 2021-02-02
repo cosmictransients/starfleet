@@ -2,16 +2,21 @@ import requests
 from django.conf import settings
 from django import forms
 from dateutil.parser import parse
-from crispy_forms.layout import Layout, Div, HTML
-from crispy_forms.bootstrap import PrependedAppendedText, PrependedText
+from crispy_forms.layout import Layout, Div, HTML, Column, Row, ButtonHolder, Submit
+from crispy_forms.bootstrap import PrependedAppendedText, PrependedText, AppendedText
 from django.core.cache import cache
 from astropy import units as u
 import datetime
 
-from tom_observations.facility import GenericObservationForm
+from tom_observations.facility import BaseObservationForm
 from tom_common.exceptions import ImproperCredentialsException
-from tom_observations.facility import GenericObservationFacility, get_service_class
+from tom_observations.facility import BaseRoboticObservationFacility, get_service_class
 from tom_targets.models import Target
+
+from tom_observations.facilities.lco import LCOBaseObservationForm, LCOPhotometricSequenceForm, LCOSpectroscopicSequenceForm, LCOFacility
+from tom_observations.widgets import FilterField
+from django.contrib.auth.models import Group
+from crispy_forms.helper import FormHelper
 
 # Determine settings for this module.
 try:
@@ -30,369 +35,252 @@ TERMINAL_OBSERVING_STATES = ['COMPLETED', 'CANCELED', 'WINDOW_EXPIRED']
 FLUX_CONSTANT = (1e-15 * u.erg) / (u.cm ** 2 * u.second * u.angstrom)
 WAVELENGTH_UNITS = u.angstrom
 
-# The SITES dictionary is used to calculate visibility intervals in the
-# planning tool. All entries should contain latitude, longitude, elevation
-# and a code.
-SITES = {
-    'Siding Spring': {
-        'sitecode': 'coj',
-        'latitude': -31.272,
-        'longitude': 149.07,
-        'elevation': 1116
-    },
-    'Sutherland': {
-        'sitecode': 'cpt',
-        'latitude': -32.38,
-        'longitude': 20.81,
-        'elevation': 1804
-    },
-    'Teide': {
-        'sitecode': 'tfn',
-        'latitude': 20.3,
-        'longitude': -16.511,
-        'elevation': 2390
-    },
-    'Cerro Tololo': {
-        'sitecode': 'lsc',
-        'latitude': -30.167,
-        'longitude': -70.804,
-        'elevation': 2198
-    },
-    'McDonald': {
-        'sitecode': 'elp',
-        'latitude': 30.679,
-        'longitude': -104.015,
-        'elevation': 2027
-    },
-    'Haleakala': {
-        'sitecode': 'ogg',
-        'latitude': 20.706,
-        'longitude': -156.258,
-        'elevation': 3065
-    }
-}
 
-# Functions needed specifically for LCO
+class InitialValue:
+    exposure_count = 2
+    block_num = 1
+
+    def __init__(self, filt):
+        self.exposure_time = self.get_values_from_filt(filt)
+
+    def get_values_from_filt(self, filt):
+        initial_exp_times = {'U': 300, 'B': 200, 'V': 120, 'gp': 200, 'rp': 120, 'ip': 120}
+        return initial_exp_times.get(filt, 0)
 
 
-def make_request(*args, **kwargs):
-    response = requests.request(*args, **kwargs)
-    if 400 <= response.status_code < 500:
-        raise ImproperCredentialsException('LCO: ' + str(response.content))
-    response.raise_for_status()
-    return response
-
-
-def _flatten_error_dict(form, error_dict):
-    non_field_errors = []
-    for k, v in error_dict.items():
-        if type(v) == list:
-            for i in v:
-                if type(i) == str:
-                    if k in form.fields:
-                        form.add_error(k, i)
-                    else:
-                        non_field_errors.append('{}: {}'.format(k, i))
-                if type(i) == dict:
-                    non_field_errors.append(_flatten_error_dict(form, i))
-        elif type(v) == str:
-            if k in form.fields:
-                form.add_error(k, v)
-            else:
-                non_field_errors.append('{}: {}'.format(k, v))
-        elif type(v) == dict:
-            non_field_errors.append(_flatten_error_dict(form, v))
-
-    return non_field_errors
-
-
-def _get_instruments():
-    cached_instruments = cache.get('lco_instruments')
-
-    if not cached_instruments:
-        response = make_request(
-            'GET',
-            PORTAL_URL + '/api/instruments/',
-            headers={'Authorization': 'Token {0}'.format(LCO_SETTINGS['api_key'])}
-        )
-        cached_instruments = response.json()
-        cache.set('lco_instruments', cached_instruments)
-
-    return cached_instruments
-
-
-def instrument_choices():
-    return [(k, k) for k in _get_instruments()]
-
-
-def filter_choices():
-    return set([
-            (f['code'], f['name']) for ins in _get_instruments().values() for f in
-            ins['optical_elements'].get('filters', []) + ins['optical_elements'].get('slits', [])
-            ])
-
-
-def proposal_choices():
-    response = make_request(
-        'GET',
-        PORTAL_URL + '/api/profile/',
-        headers={'Authorization': 'Token {0}'.format(LCO_SETTINGS['api_key'])}
-    )
-    choices = []
-    for p in response.json()['proposals']:
-        if p['current']:
-            choices.append((p['id'], '{} ({})'.format(p['title'], p['id'])))
-    return choices
-
-
-class LCOObservationForm(GenericObservationForm):
-    #group_id = forms.CharField()
-    #proposal = forms.ChoiceField(choices=_proposal_choices,initial='KEY2017AB-001')
-    proposal = forms.ChoiceField(choices=proposal_choices(),initial='KEY2017AB-001')
-    ipp_value = forms.FloatField(initial=1.0,label='',
-        help_text='IPP: priority, ranging from 0.5 (low) to 2.0 (high)')
-    start = forms.CharField(initial=str(datetime.datetime.utcnow()))
-    #start = forms.DateField(widget=forms.SelectDateWidget(empty_label=("Choose year","choose month","choose day")))
-    end = forms.CharField(widget=forms.TextInput(attrs={'type': 'date'}))
-    window = forms.FloatField(initial=3.0,label="")
-    filter = forms.ChoiceField(choices=filter_choices(),initial='b')
-    instrument_type= forms.ChoiceField(choices=instrument_choices(),initial='1M0-SCICAM-SINISTRO')
-    exposure_count_U = forms.IntegerField(min_value=1,initial=2,label='No. of exposures')
-    exposure_time_U = forms.FloatField(min_value=0.1,initial=300,label='Exposure time')
-    exposure_count_B = forms.IntegerField(min_value=1,initial=2,label='')
-    exposure_time_B = forms.FloatField(min_value=0.1,initial=200,label='')
-    exposure_count_V = forms.IntegerField(min_value=1,initial=2,label='')
-    exposure_time_V = forms.FloatField(min_value=0.1,initial=120,label='')
-    exposure_count_g = forms.IntegerField(min_value=1,initial=2,label='')
-    exposure_time_g = forms.FloatField(min_value=0.1,initial=200,label='')
-    exposure_count_r = forms.IntegerField(min_value=1,initial=2,label='')
-    exposure_time_r = forms.FloatField(min_value=0.1,initial=120,label='')
-    exposure_count_i = forms.IntegerField(min_value=1,initial=2,label='')
-    exposure_time_i = forms.FloatField(min_value=0.1,initial=120,label='')
-    max_airmass = forms.FloatField(initial=1.6,label='')
-    priority_level = forms.ChoiceField(
-        choices=(('NORMAL', 'Normal'), ('TARGET_OF_OPPORTUNITY', 'Rapid Response'))
-    )
+class SnexPhotometricSequenceForm(LCOPhotometricSequenceForm):
+    name = forms.CharField()
+    ipp_value = forms.FloatField(label='Intra Proposal Priority (IPP factor)',
+                                 min_value=0.5,
+                                 max_value=2,
+                                 initial=1.0)
+    
+    # Rewrite a lot of the form fields to have unique IDs between photometry and spectroscopy
+    filters = ['U', 'B', 'V', 'R', 'I', 'u', 'gp', 'rp', 'ip', 'zs', 'w']
+    max_airmass = forms.FloatField(initial=1.6, min_value=0, label='Max Airmass')
+    min_lunar_distance = forms.IntegerField(min_value=0, label='Minimum Lunar Distance', initial=20, required=False)
+    cadence_frequency = forms.FloatField(required=True, min_value=0.0, initial=3.0, label='')
+    ipp_value = forms.FloatField(label='IPP', min_value=0.5, max_value=2.0, initial=1.0)
+    observation_mode = forms.ChoiceField(choices=(('NORMAL', 'Normal'), ('RAPID_RESPONSE', 'Rapid-Response'), ('TIME_CRITICAL', 'Time-Critical')), label='Observation Mode')
+    
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super(LCOPhotometricSequenceForm, self).__init__(*args, **kwargs)
+
+        # Add fields for each available filter as specified in the filters property
+        for filter_name in self.filters:
+            self.fields[filter_name] = FilterField(label='', initial=InitialValue(filter_name), required=False)        
+
+        # Set default proposal to GSP
+        proposal_choices = self.proposal_choices()
+        initial_proposal = ''
+        for choice in proposal_choices:
+            if 'Global Supernova Project' in choice[1]:
+                initial_proposal = choice
+        self.fields['proposal'] = forms.ChoiceField(choices=proposal_choices, initial=initial_proposal)
+    
+        # Massage cadence form to be SNEx-styled
+        self.fields['name'].label = ''
+        self.fields['name'].widget.attrs['placeholder'] = 'Name'
+        self.fields['cadence_strategy'] = forms.ChoiceField(
+            choices=[('', 'Once in the next'), ('ResumeCadenceAfterFailureStrategy', 'Repeating every')],
+            required=False,
+            label=''
+        )
+        for field_name in ['exposure_time', 'exposure_count', 'start', 'end', 'filter']:
+            self.fields.pop(field_name)
+        
+        if not settings.TARGET_PERMISSIONS_ONLY:
+            self.fields['groups'] = forms.ModelMultipleChoiceField(
+                    Group.objects.none(), 
+                    required=False,
+                    widget=forms.CheckboxSelectMultiple, 
+                    label='Data granted to')
+        
+        self.fields['instrument_type'] = forms.ChoiceField(choices=self.instrument_choices(), initial=('1M0-SCICAM-SINISTRO', '1.0 meter Sinistro'))
+        #self.fields['name'].widget = forms.HiddenInput()
+        #self.fields['proposal'] = forms.ChoiceField(choices=self.proposal_choices(), label='Proposal')
+        
         self.helper.layout = Layout(
-            self.common_layout,
             Div(
-                Div(
-                    HTML("<p></p>"),
-                    PrependedAppendedText(
-                        'window','Once in the next', 'days'
-                    ),
-                    Div(
-                        Div(PrependedText('exposure_time_U','U'),css_class='col-md-6'),
-                        Div('exposure_count_U',css_class='col-md-6'),
-                        css_class='form-row'
-                    ),
-                    Div(
-                        Div(PrependedText('exposure_time_B','B'),css_class='col-md-6'),
-                        Div('exposure_count_B',css_class='col-md-6'),
-                        css_class='form-row'
-                    ),
-                    Div(
-                        Div(PrependedText('exposure_time_V','V'),css_class='col-md-6'),
-                        Div('exposure_count_V',css_class='col-md-6'),
-                        css_class='form-row'
-                    ),
-                    Div(
-                        Div(PrependedText('exposure_time_g','g'),css_class='col-md-6'),
-                        Div('exposure_count_g',css_class='col-md-6'),
-                        css_class='form-row'
-                    ),
-                    Div(
-                        Div(PrependedText('exposure_time_r','r'),css_class='col-md-6'),
-                        Div('exposure_count_r',css_class='col-md-6'),
-                        css_class='form-row'
-                    ),
-                    Div(
-                        Div(PrependedText('exposure_time_i','i'),css_class='col-md-6'),
-                        Div('exposure_count_i',css_class='col-md-6'),
-                        css_class='form-row'
-                    ),
-                    css_class='col'
-                ),
-                Div(
-                    HTML("<p></p>"),
-                    PrependedText('max_airmass', 'Airmass <'),
-                    PrependedText('ipp_value', 'IPP'),
-                    'instrument_type', 'proposal', 'priority_level', 
-                    css_class='col'
-                ),
+                Column('name'),
+                Column('cadence_strategy'),
+                Column(AppendedText('cadence_frequency', 'Days')),
                 css_class='form-row'
+            ),
+            Layout('facility', 'target_id', 'observation_type'),
+            self.layout(),
+            self.button_layout()
+        )
+
+    def clean(self):
+        """
+        This clean method does the following:
+            - Adds a start time of "right now", as the photometric sequence form does not allow for specification
+              of a start time.
+            - Adds an end time that corresponds with the cadence frequency
+            - Adds the cadence strategy to the form if "repeat" was the selected "cadence_type". If "once" was
+              selected, the observation is submitted as a single observation.
+        """
+        #TODO: Make sure that my conversion from days to hours works,
+        #      and look into implementing a "delay start by" option like in SNEx
+        cleaned_data = super().clean()
+        now = datetime.datetime.now()
+        cleaned_data['start'] = datetime.datetime.strftime(now, '%Y-%m-%dT%H:%M:%S')
+        cleaned_data['end'] = datetime.datetime.strftime(now + datetime.timedelta(hours=cleaned_data['cadence_frequency']*24),
+                                                '%Y-%m-%dT%H:%M:%S')
+
+        return cleaned_data
+
+    def layout(self):
+        if settings.TARGET_PERMISSIONS_ONLY:
+            groups = Div()
+        else:
+            groups = Row('groups')
+
+        # Add filters to layout
+        filter_layout = Layout(
+            Row(
+                Column(HTML('Exposure Time')),
+                Column(HTML('No. of Exposures')),
+                Column(HTML('Block No.')),
             )
         )
-    """
-    def layout(self):
+        for filter_name in self.filters:
+            filter_layout.append(Row(PrependedText(filter_name, filter_name)))
         return Div(
             Div(
-                'name', 'proposal', 'ipp_value', 'observation_type', 'start', 'end',
-                css_class='col'
+                filter_layout,
+                css_class='col-md-6'
             ),
             Div(
-                'filter', 'instrument_type', 'exposure_count', 'exposure_time', 'max_airmass',
-                css_class='col'
+                Row('max_airmass'),
+                Row(
+                    PrependedText('min_lunar_distance', '>')
+                ),
+                Row('instrument_type'),
+                Row('proposal'),
+                Row('observation_mode'),
+                Row('ipp_value'),
+                groups,
+                css_class='col-md-6'
             ),
             css_class='form-row'
         )
 
-    def extra_layout(self):
-        # If you just want to add some fields to the end of the form, add them here.
-        return Div()
-    """
-    def clean_start(self):
-        start = self.cleaned_data['start']
-        return parse(start).isoformat()
-
-    def clean_end(self):
-        end = self.cleaned_data['end']
-        return parse(end).isoformat()
-
-    def is_valid(self):
-        super().is_valid()
-        # TODO this is a bit leaky and should be done without the need of get_service_class
-        obs_module = get_service_class(self.cleaned_data['facility'])
-        errors = obs_module().validate_observation(self.observation_payload())
-        if errors:
-            self.add_error(None, _flatten_error_dict(self, errors))
-        return not errors
-
-    def instrument_to_type(self, instrument_type):
-        if any(x in instrument_type for x in ['FLOYDS', 'NRES']):
-            return 'SPECTRUM'
-        else:
-            return 'EXPOSE'
-
-    def observation_payload(self):
-        target = Target.objects.get(pk=self.cleaned_data['target_id'])
-        target_fields = {
-            "name": target.name,
-        }
-        if target.type == Target.SIDEREAL:
-            target_fields['type'] = 'ICRS'
-            target_fields['ra'] = target.ra
-            target_fields['dec'] = target.dec
-            target_fields['proper_motion_ra'] = target.pm_ra
-            target_fields['proper_motion_dec'] = target.pm_dec
-            target_fields['epoch'] = target.epoch
-        elif target.type == Target.NON_SIDEREAL:
-            target_fields['type'] = 'ORBITAL_ELEMENTS'
-            target_fields['scheme'] = target.scheme
-            target_fields['orbinc'] = target.inclination
-            target_fields['longascnode'] = target.lng_asc_node
-            target_fields['argofperih'] = target.arg_of_perihelion
-            target_fields['eccentricity'] = target.eccentricity
-            target_fields['meandist'] = target.semimajor_axis
-            target_fields['meananom'] = target.mean_anomaly
-            target_fields['perihdist'] = target.distance
-            target_fields['dailymot'] = target.mean_daily_motion
-            target_fields['epochofel'] = target.epoch
-            target_fields['epochofperih'] = target.epoch_of_perihelion
-
-        #photometry
-        if self.instrument_to_type(self.cleaned_data['instrument_type']) == 'EXPOSE':
-            exps = {
-               'u': 
-                    {'exp_time': self.cleaned_data['exposure_time_U'],
-                    'exp_count': self.cleaned_data['exposure_count_U']},
-               'B': 
-                    {'exp_time': self.cleaned_data['exposure_time_B'],
-                    'exp_count': self.cleaned_data['exposure_count_B']},
-               'V': 
-                    {'exp_time': self.cleaned_data['exposure_time_V'],
-                    'exp_count': self.cleaned_data['exposure_count_V']},
-               'gp': 
-                    {'exp_time': self.cleaned_data['exposure_time_g'],
-                    'exp_count': self.cleaned_data['exposure_count_g']},
-               'rp': 
-                    {'exp_time': self.cleaned_data['exposure_time_r'],
-                    'exp_count': self.cleaned_data['exposure_count_r']},
-               'ip': 
-                    {'exp_time': self.cleaned_data['exposure_time_i'],
-                    'exp_count': self.cleaned_data['exposure_count_i']}
-            }
-            configurations = []
-            for filt in exps:
-                configurations.append(
-                        {
-                            "type": self.instrument_to_type(self.cleaned_data['instrument_type']),
-                            "instrument_type": self.cleaned_data['instrument_type'],
-                            "target": target_fields,
-                            "instrument_configs": [
-                                {
-                                    "exposure_count": exps[filt]['exp_count'],
-                                    "exposure_time": exps[filt]['exp_time'],
-                                    "optical_elements": {"filter": filt}
-                                }
-                            ],
-                            "acquisition_config": {
-
-                            },
-                            "guiding_config": {
-
-                            },
-                            "constraints": {
-                               "max_airmass": self.cleaned_data['max_airmass'],
-                            }
-                        }
-                )
-                
-        else:
-            optical_elements = {
-                "slit": self.cleaned_data['filter'],
-            }
-
-        return {
-            #"name": self.cleaned_data['name'],
-            "name": target.name,
-            "proposal": self.cleaned_data['proposal'],
-            "ipp_value": self.cleaned_data['ipp_value'],
-            "operator": "SINGLE",
-            "observation_type": self.cleaned_data['priority_level'],
-            "requests": [
-                {
-                    "configurations": configurations,
-                    "windows": [
-                        {
-                            #"start": self.cleaned_data['start'],
-                            #"end": self.cleaned_data['end']
-                            "start": str(datetime.datetime.utcnow()),
-                            "end": str(datetime.datetime.utcnow()+
-                                datetime.timedelta(days=self.cleaned_data['window']))
-                        }
-                    ],
-                    "location": {
-                        "telescope_class": self.cleaned_data['instrument_type'][:3].lower()
-                    }
-                }
-            ]
-        }
+    def button_layout(self):
+        target_id = self.initial.get('target_id')
+        return ButtonHolder(
+                Submit('submit', 'Submit', css_id='phot-submit')
+                #HTML(f'''<a class="btn btn-outline-primary" href={{% url 'tom_targets:detail' {target_id} %}}>
+                #         Back</a>''')
+            )
 
 
-class LCOFacility(GenericObservationFacility):
+class SnexSpectroscopicSequenceForm(LCOSpectroscopicSequenceForm):
+    exposure_count = forms.IntegerField(min_value=1, required=False, initial=1, widget=forms.HiddenInput())
+    cadence_frequency = forms.FloatField(required=True, min_value=0.0, initial=3.0, widget=forms.NumberInput(attrs={'placeholder': 'Days'}), label='')
+    max_airmass = forms.FloatField(initial=1.6, min_value=0, label='Max Airmass')
+    acquisition_radius = forms.FloatField(min_value=0, required=False, initial=5.0)
+    guider_exposure_time = forms.FloatField(min_value=0, initial=10.0)
+    name = forms.CharField()
+    ipp_value = forms.FloatField(label='Intra Proposal Priority (IPP factor)',
+                                 min_value=0.5,
+                                 max_value=2,
+                                 initial=1.0)
+    min_lunar_distance = forms.IntegerField(min_value=0, label='Minimum Lunar Distance', initial=20, required=False)
+    exposure_time = forms.IntegerField(min_value=1,
+                                     widget=forms.TextInput(attrs={'placeholder': 'Seconds'}),
+                                     initial=1800)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Massage cadence form to be SNEx-styled
+        self.fields['filter'] = forms.ChoiceField(choices=self.filter_choices(), 
+                                                  label='Slit',
+                                                  initial=('slit_2.0as', '2.0 arcsec slit'))
+        self.fields['name'].label = ''
+        self.fields['name'].widget.attrs['placeholder'] = 'Name'
+        self.fields['min_lunar_distance'].widget.attrs['placeholder'] = 'Degrees'
+        self.fields['cadence_strategy'] = forms.ChoiceField(
+            choices=[('', 'Once in the next'), ('ResumeCadenceAfterFailureStrategy', 'Repeating every')],
+            required=False,
+            label=''
+        )
+        self.fields['instrument_type'] = forms.ChoiceField(choices=self.instrument_choices(),
+                                                           required=False,
+                                                           initial='2M0-FLOYDS-SCICAM',
+                                                           widget=forms.HiddenInput())
+
+        # Set default proposal to GSP
+        proposal_choices = self.proposal_choices()
+        initial_proposal = ''
+        for choice in proposal_choices:
+            if 'Global Supernova Project' in choice[1]:
+                initial_proposal = choice
+        self.fields['proposal'] = forms.ChoiceField(choices=proposal_choices, initial=initial_proposal)
+
+        # Remove start and end because those are determined by the cadence
+        for field_name in ['start', 'end']:
+            if self.fields.get(field_name):
+                #TODO: Figure out why start and end aren't fields sometimes
+                self.fields.pop(field_name)
+        if self.fields.get('groups'):
+            self.fields['groups'].label = 'Data granted to'
+        
+        self.helper.layout = Layout(
+            Div(
+                Column('name'),
+                Column('cadence_strategy'),
+                Column(AppendedText('cadence_frequency', 'Days')),
+                css_class='form-row'
+            ),
+            Layout('facility', 'target_id', 'observation_type'),
+            self.layout(),
+            self.button_layout()
+        )
+
+    def clean(self):
+        """
+        This clean method does the following:
+            - Hardcodes instrument type as "2M0-FLOYDS-SCICAM" because it's the only instrument this form uses
+            - Adds a start time of "right now", as the spectroscopic sequence form does not allow for specification
+              of a start time.
+            - Adds an end time that corresponds with the cadence frequency
+            - Adds the cadence strategy to the form if "repeat" was the selected "cadence_type". If "once" was
+              selected, the observation is submitted as a single observation.
+        """
+        cleaned_data = super().clean()
+        self.cleaned_data['instrument_type'] = '2M0-FLOYDS-SCICAM'  # SNEx only submits spectra to FLOYDS
+        now = datetime.datetime.now()
+        cleaned_data['start'] = datetime.datetime.strftime(now, '%Y-%m-%dT%H:%M:%S')
+        cleaned_data['end'] = datetime.datetime.strftime(now + datetime.timedelta(hours=cleaned_data['cadence_frequency']*24),
+                                                '%Y-%m-%dT%H:%M:%S')
+
+        return cleaned_data
+
+
+class SnexLCOFacility(LCOFacility):
     name = 'LCO'
-    form = LCOObservationForm
-    observation_types = [('IMAGING', 'Imaging')]
-
-    def get_form(self, observation_type):
-        return LCOObservationForm
+    observation_types = [('IMAGING', 'Imaging'),
+                         ('SPECTRA', 'Spectra')]
+    observation_forms = {
+        'IMAGING': SnexPhotometricSequenceForm,
+        'SPECTRA': SnexSpectroscopicSequenceForm
+    }
 
     def submit_observation(self, observation_payload):
         response = make_request(
             'POST',
-            PORTAL_URL + '/api/requestgroups/validate/',
-            #PORTAL_URL + '/api/requestgroups/',
+            #PORTAL_URL + '/api/requestgroups/validate/',
+            PORTAL_URL + '/api/requestgroups/',
             json=observation_payload,
             headers=self._portal_headers()
         )
-        #return [r['id'] for r in response.json()['requests']]
-        #Since we're not actually submitting just generate random id
-        import random; id_number = random.randint(1,1000001)
-        return [id_number]
+        print('Made request')
+        import pdb
+        pdb.set_trace()
+        return [r['id'] for r in response.json()['requests']]
 
     def validate_observation(self, observation_payload):
         response = make_request(
@@ -401,107 +289,8 @@ class LCOFacility(GenericObservationFacility):
             json=observation_payload,
             headers=self._portal_headers()
         )
+        print('Validating observation')
+        import pdb
+        pdb.set_trace()
         return response.json()['errors']
 
-    def get_observation_url(self, observation_id):
-        return PORTAL_URL + '/requests/' + observation_id
-
-    def get_flux_constant(self):
-        return FLUX_CONSTANT
-
-    def get_wavelength_units(self):
-        return WAVELENGTH_UNITS
-
-    def get_terminal_observing_states(self):
-        return TERMINAL_OBSERVING_STATES
-
-    def get_observing_sites(self):
-        return SITES
-
-    def get_observation_status(self, observation_id):
-        response = make_request(
-            'GET',
-            PORTAL_URL + '/api/requests/{0}'.format(observation_id),
-            headers=self._portal_headers()
-        )
-        state = response.json()['state']
-
-        response = make_request(
-            'GET',
-            PORTAL_URL + '/api/requests/{0}/observations/'.format(observation_id),
-            headers=self._portal_headers()
-        )
-        blocks = response.json()
-        current_block = None
-        for block in blocks:
-            if block['state'] == 'COMPLETED':
-                current_block = block
-                break
-            elif block['state'] == 'PENDING':
-                current_block = block
-        if current_block:
-            scheduled_start = current_block['start']
-            scheduled_end = current_block['end']
-        else:
-            scheduled_start, scheduled_end = None, None
-
-        return {'state': state, 'scheduled_start': scheduled_start, 'scheduled_end': scheduled_end}
-
-    def data_products(self, observation_id, product_id=None):
-        products = []
-        for frame in self._archive_frames(observation_id, product_id):
-            products.append({
-                'id': frame['id'],
-                'filename': frame['filename'],
-                'created': parse(frame['DATE_OBS']),
-                'url': frame['url']
-            })
-        return products
-
-    # The following methods are used internally by this module
-    # and should not be called directly from outside code.
-
-    def _portal_headers(self):
-        if LCO_SETTINGS.get('api_key'):
-            return {'Authorization': 'Token {0}'.format(LCO_SETTINGS['api_key'])}
-        else:
-            return {}
-
-    def _archive_headers(self):
-        if LCO_SETTINGS.get('api_key'):
-            archive_token = cache.get('LCO_ARCHIVE_TOKEN')
-            if not archive_token:
-                response = make_request(
-                    'GET',
-                    PORTAL_URL + '/api/profile/',
-                    headers={'Authorization': 'Token {0}'.format(LCO_SETTINGS['api_key'])}
-                )
-                archive_token = response.json().get('tokens', {}).get('archive')
-                if archive_token:
-                    cache.set('LCO_ARCHIVE_TOKEN', archive_token, 3600)
-                    return {'Authorization': 'Bearer {0}'.format(archive_token)}
-
-            else:
-                return {'Authorization': 'Bearer {0}'.format(archive_token)}
-        else:
-            return {}
-
-    def _archive_frames(self, observation_id, product_id=None):
-        # todo save this key somewhere
-        frames = []
-        if product_id:
-            response = make_request(
-                'GET',
-                'https://archive-api.lco.global/frames/{0}/'.format(product_id),
-                headers=self._archive_headers()
-            )
-            frames = [response.json()]
-        else:
-            response = make_request(
-                'GET',
-                'https://archive-api.lco.global/frames/?REQNUM={0}'.format(observation_id),
-                headers=self._archive_headers()
-            )
-            frames = response.json()['results']
-
-        return frames

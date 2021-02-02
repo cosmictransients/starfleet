@@ -54,6 +54,9 @@ INSTALLED_APPS = [
     'tom_observations',
     'tom_dataproducts',
     'custom_code',
+    'rest_framework',
+    'django_plotly_dash.apps.DjangoPlotlyDashConfig',
+
 ]
 
 SITE_ID = 1
@@ -66,6 +69,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'tom_common.middleware.Raise403Middleware',
     'tom_common.middleware.ExternalServiceMiddleware',
     'tom_common.middleware.AuthStrategyMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -134,7 +138,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
+LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
@@ -245,14 +249,18 @@ EXTRA_FIELDS = [
 # Authentication strategy can either be LOCKED (required login for all views)
 # or READ_ONLY (read only access to views)
 AUTH_STRATEGY = 'LOCKED'
+#AUTH_STRATEGY = 'READ_ONLY'
+
+TARGET_PERMISSIONS_ONLY = False
 
 # URLs that should be allowed access even with AUTH_STRATEGY = LOCKED
 # for example: OPEN_URLS = ['/', '/about']
-OPEN_URLS = ['/snex2/tnstargets/']
+OPEN_URLS = ['/snex2/tnstargets/', '/pipeline-upload/photometry-upload/']
 
 HOOKS = {
     'target_post_save': 'custom_code.hooks.target_post_save',
-    'observation_change_state': 'tom_common.hooks.observation_change_state'
+    'observation_change_state': 'tom_common.hooks.observation_change_state',
+    'targetextra_post_save': 'custom_code.hooks.targetextra_post_save'
 }
 
 TOM_ALERT_CLASSES = [
@@ -267,7 +275,8 @@ BROKER_CREDENTIALS = {
 
 TOM_FACILITY_CLASSES = [
     'custom_code.facilities.gemini.GeminiFacility',
-    'custom_code.facilities.lco.LCOFacility',
+    'custom_code.facilities.lco.SnexLCOFacility',
+    'custom_code.facilities.soar_facility.SOARFacility',
     ]
 
 TOM_HARVESTER_CLASSES = [
@@ -290,12 +299,43 @@ DATA_PRODUCT_TYPES = {
 }
 
 DATA_PROCESSORS = {
-    'photometry': 'tom_dataproducts.processors.photometry_processor.PhotometryProcessor',
-    'spectroscopy': 'tom_dataproducts.processors.spectroscopy_processor.SpectroscopyProcessor',
+    'photometry': 'custom_code.processors.photometry_processor.PhotometryProcessor',
+    'spectroscopy': 'custom_code.processors.spectroscopy_processor.SpecProcessor',
 }
+
+#TOM_LATEX_PROCESSORS = {
+#    'ObservationGroup': 'tom_publications.processors.observation_group_latex_processor.ObservationGroupLatexProcessor',
+#    'TargetList': 'tom_publications.processors.target_list_latex_processor.TargetListLatexProcessor'
+#}
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+    ],
+    'TEST_REQUEST_DEFAULT_FORMAT': 'json',
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 100
+}
+
+TARGET_CLASSIFICATIONS = [
+    'Afterglow', 'Afterglow?', 'AGN', 'AGN?', 'Ca-rich', 'Ca-rich?', 'CV', 'CV?', 'Galaxy', 'ILRN', 'ILRN?', 'Junk', 'Kilonova', 'Kilonova?', 'LBV', 'LBV?', 'Nova', 'Nova?', 'SLSN-I', 'SLSN-I?', 'SLSN-II', 'SLSN-II?', 'SLSN-R', 'SLSN-R?', 'SN', 'SN I-faint', 'SN I-faint?', 'SN Ia', 'SN Ia 02cx-like', 'SN Ia 02cx-like?', 'SN Ia 02es-like', 'SN Ia 02es-like?', 'SN Ia 02ic-like', 'SN Ia 02ic-like?', 'SN Ia 91bg-like', 'SN Ia 91bg-like?', 'SN Ia 91T-like', 'SN Ia 91T-like?', 'SN Ia pec', 'SN Ia pec?', 'SN Ia?', 'SN Ib', 'SN Ib/c', 'SN Ib/c?', 'SN Ib?', 'SN Ibn', 'SN Ibn?', 'SN Ic', 'SN Ic-BL', 'SN Ic-BL?', 'SN Ic?', 'SN II', 'SN II?', 'SN IIb', 'SN IIb?', 'SN IIL', 'SN IIL?', 'SN IIn', 'SN IIn?', 'SN IIP', 'SN IIP?', 'SN?', 'Standard', 'TDE', 'TDE?', 'Unknown', 'Varstar', 'Varstar?'
+]
+
+DEFAULT_GROUPS = [
+    'ANU', 'ARIES', 'CSP', 'CU Boulder', 'e/PESSTO', 'ex-LCOGT', 'KMTNet', 'LBNL', 'LCOGT', 'LSQ', 'NAOC', 'Padova', 'QUB', 'SAAO', 'SIRAH', 'Skymapper', 'Tel Aviv U', 'U Penn', 'UC Berkeley', 'US GSP', 'UT Austin'
+]
+
+X_FRAME_OPTIONS = 'ALLOWALL'
 
 HINTS_ENABLED = False
 HINT_LEVEL = 20
+
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+    'django.contrib.auth.hashers.CryptPasswordHasher',
+    #'django.contrib.auth.hashers.Argon2PasswordHasher',
+    #'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+]
 
 try:
     from local_settings import * # noqa

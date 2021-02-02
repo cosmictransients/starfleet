@@ -8,11 +8,11 @@
 
     <!-- Bootstrap CSS -->
     {% bootstrap_css %}
-    <link rel="stylesheet" href="{% static 'tom_common/css/main.css' %}">
+    <link rel="stylesheet" href="{% static 'tom_common/css/main_snexclone.css' %}">
     {% block additional_css %}
     {% endblock %}
-    <link rel="icon" type="image/png" href="{% static 'tom_common/img/favicon-32x32.png' %}" sizes="32x32" />
-    <link rel="icon" type="image/png" href="{% static 'tom_common/img/favicon-16x16.png' %}" sizes="16x16" />
+    <link rel="icon" type="image/x-icon" href="{% static 'tom_common/img/favicon-32.ico' %}" sizes="32x32" />
+    <link rel="icon" type="image/x-icon" href="{% static 'tom_common/img/favicon-16.ico' %}" sizes="16x16" />
 
     {% bootstrap_javascript jquery='True' %}
 
@@ -30,8 +30,16 @@
           <li class="nav-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
             <a class="nav-link" href="/">Home <span class="sr-only">(current)</span></a>
           </li>
-          <li class="nav-item {% if request.resolver_match.url_name == 'targets' %}active{% endif %}">
-            <a class="nav-link" href="{% url 'targets:list' %}">Targets</a>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" data-toggle="dropdown" style="font-family: 'Montserrat', sans-serif;">Targets</a>
+            <ul class="dropdown-menu">
+              <li class="nav-item {% if request.resolver_match.namespace == 'targets' %}active{% endif %}">
+                <a class="nav-link" href="{% url 'targets:list' %}"><font color="black">Targets</font></a>
+              </li>
+              <li class="nav-item {% if request.resolver_match.namespace == 'targets' %}active{% endif %}">
+                <a class="nav-link" href="{% url 'targets:targetgrouping' %}"><font color="black">Target Grouping</font></a>
+              </li>
+            </ul>
           </li>
           <li class="nav-item {% if request.resolver_match.namespace == 'alerts' %}active{% endif %}">
             <a class="nav-link" href="{% url 'alerts:list' %}">Alerts</a>
@@ -45,17 +53,24 @@
           <li class="nav-item {% if 'user' in request.resolver_match.url_name %}active{% endif %}">
             <a class="nav-link" href="{% url 'user-list' %}">Users</a>
           </li>
-          <li class="nav-item {% if request.resolver_match.url_name == 'tns-targets' %}active{% endif %}">
-              <a class="nav-link" href="{% url 'custom_code:tns-targets' %}">TNS&nbsp;Targets</a>
+	  <li class="nav-item {% if request.resolver_match.namespace == 'custom_code' %}active{% endif %}">
+            <a class="nav-link" href="{% url 'custom_code:tns-targets' %}" style="font-family: 'Montserrat', sans-serif;">TNS Targets</a>
           </li>
+	  <li class="nav-item" style="align-self: center;padding: 10px">
+	    <div class="target-search">
+	      <form action="{% url 'redirect' %}" method="get">
+                <input name="name" type="text" placeholder="Search by name or coords">
+              </form>
+	    </div>
+	  </li>
         </ul>
         <ul class="navbar-nav ml-auto">
         {% if user.is_authenticated %}
           <li class="nav-item">
             {% if user.first_name or user.last_name %}
-            <a class="nav-link" href="{% url 'user-update' user.id %}">{{ user.first_name }}&nbsp;{{ user.last_name }}</a>
+            <a class="nav-link" href="{% url 'user-update' user.id %}">{{ user.first_name }} {{ user.last_name }}</a>
             {% else %}
-            <a class="nav-link" href="{% url 'user-update' user.id %}">User&nbsp;{{ user.id }}</a>
+            <a class="nav-link" href="{% url 'user-update' user.id %}">User {{ user.id }}</a>
             {% endif %}
           </li>
           <li>
