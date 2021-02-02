@@ -12,6 +12,8 @@ from tom_targets.models import Target, TargetExtra
 from tom_targets.forms import TargetVisibilityForm
 from tom_observations import utils, facility
 from tom_dataproducts.models import DataProduct, ReducedDatum, ObservationRecord
+from tom_dataproducts.processors.data_serializers import SpectrumSerializer
+from tom_dataproducts.processors.spectroscopy_processor import SpectroscopyProcessor
 
 from astroplan import Observer, FixedTarget, AtNightConstraint, time_grid_from_range, moon_illumination
 import datetime
@@ -21,6 +23,7 @@ from astropy import units as u
 from astropy.coordinates import get_moon, get_sun, SkyCoord, AltAz
 import numpy as np
 import time
+import re
 
 from custom_code.models import ScienceTags, TargetTags, ReducedDatumExtra, Papers
 from custom_code.forms import CustomDataProductUploadForm, PapersForm
@@ -347,14 +350,13 @@ def spectra_plot(target, dataproduct=None):
     if dataproduct:
         spectral_dataproducts = DataProduct.objects.get(dataproduct=dataproduct)
     for spectrum in spectral_dataproducts:
-        datum = json.loads(spectrum.value)
-        wavelength = []
-        flux = []
+        datum = SpectrumSerializer().deserialize(spectrum.value)
+        wavelength = datum.spectral_axis.to(SpectroscopyProcessor.DEFAULT_WAVELENGTH_UNITS).value
+        flux = datum.new_flux_unit(SpectroscopyProcessor.DEFAULT_FLUX_CONSTANT).flux.value
         name = str(spectrum.timestamp).split(' ')[0]
-        for key, value in datum.items():
-            wavelength.append(float(value['wavelength']))
-            flux.append(float(value['flux']))
         spectra.append((wavelength, flux, name))
+    wavelength_unit = SpectroscopyProcessor.DEFAULT_WAVELENGTH_UNITS.to_string('unicode')
+    flux_unit = re.sub('\s*─+\s*', ' / ', SpectroscopyProcessor.DEFAULT_FLUX_CONSTANT.to_string('unicode').strip())
     plot_data = [
         go.Scatter(
             x=spectrum[0],
@@ -367,7 +369,7 @@ def spectra_plot(target, dataproduct=None):
         hovermode='closest',
         xaxis=dict(
             tickformat=".0f",
-            title='Wavelength (Å)',
+            title=f'Wavelength ({wavelength_unit})',
             gridcolor='#D3D3D3',
             showline=True,
             linecolor='#D3D3D3',
@@ -375,7 +377,7 @@ def spectra_plot(target, dataproduct=None):
         ),
         yaxis=dict(
             tickformat=".1eg",
-            title='Flux',
+            title=f'Flux ({flux_unit})',
             gridcolor='#D3D3D3',
             showline=True,
             linecolor='#D3D3D3',
