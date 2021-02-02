@@ -1,6 +1,6 @@
 import copy
 
-from tom_observations.facilities.soar import SOARFacility, SOARBaseObservationForm, SOARSpectroscopyObservationForm
+from tom_observations.facilities.soar import SOARFacility, SOARSpectroscopyObservationForm
 from tom_observations.facilities.lco import LCOSpectroscopyObservationForm, make_request
 from django import forms
 import datetime

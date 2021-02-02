@@ -1,22 +1,13 @@
-import requests
 from django.conf import settings
 from django import forms
-from dateutil.parser import parse
 from crispy_forms.layout import Layout, Div, HTML, Column, Row, ButtonHolder, Submit
-from crispy_forms.bootstrap import PrependedAppendedText, PrependedText, AppendedText
-from django.core.cache import cache
+from crispy_forms.bootstrap import PrependedText, AppendedText
 from astropy import units as u
 import datetime
 
-from tom_observations.facility import BaseObservationForm
-from tom_common.exceptions import ImproperCredentialsException
-from tom_observations.facility import BaseRoboticObservationFacility, get_service_class
-from tom_targets.models import Target
-
-from tom_observations.facilities.lco import LCOBaseObservationForm, LCOPhotometricSequenceForm, LCOSpectroscopicSequenceForm, LCOFacility
+from tom_observations.facilities.lco import LCOPhotometricSequenceForm, LCOSpectroscopicSequenceForm, LCOFacility
 from tom_observations.widgets import FilterField
 from django.contrib.auth.models import Group
-from crispy_forms.helper import FormHelper
 
 # Determine settings for this module.
 try:

@@ -5,7 +5,6 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from django.conf import settings
 from django import forms
-from dateutil.parser import parse
 from crispy_forms.layout import Layout, Div, HTML
 from crispy_forms.bootstrap import PrependedAppendedText, PrependedText, InlineRadios
 
