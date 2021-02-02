@@ -28,6 +28,7 @@ custom_router.register(r'photometry-upload', CustomDataProductViewSet, 'photomet
 
 
 urlpatterns = [
+    path('', TargetListView.as_view(), name='list'),
     path('targets/', TargetListView.as_view(), name='list'),
     path('redirect/', target_redirect_view, name='redirect'),
     path('add_tag/', add_tag_view, name='add_tag'),
