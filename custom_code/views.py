@@ -6,8 +6,8 @@ from django.views.generic.edit import FormView, UpdateView
 from django.urls import reverse
 
 from tom_targets.views import TargetListView
-from custom_code.models import TNSTarget, ScienceTags, TargetTags, ReducedDatumExtra, Papers
-from custom_code.filters import TNSTargetFilter, CustomTargetFilter #
+from custom_code.models import ScienceTags, TargetTags, ReducedDatumExtra, Papers
+from custom_code.filters import CustomTargetFilter
 from tom_targets.models import TargetList
 
 from tom_targets.models import Target, TargetExtra
@@ -72,29 +72,6 @@ def make_magrecent(all_phot, jd_now):
         filt = filt,
         time = diff)
     return mag_recent
-
-class TNSTargets(FilterView):
-
-    # Look at https://simpleisbetterthancomplex.com/tutorial/2016/11/28/how-to-filter-querysets-dynamically.html
-    
-    template_name = 'custom_code/tns_targets.html'
-    model = TNSTarget
-    paginate_by = 10
-    context_object_name = 'tnstargets'
-    strict = False
-    filterset_class = TNSTargetFilter
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        jd_now = Time(datetime.utcnow()).jd
-        TNS_URL = "https://www.wis-tns.org/object/"
-        for target in context['object_list']:
-            target.coords = make_coords(target.ra, target.dec)
-            target.mag_lnd = make_lnd(target.lnd_maglim,
-                target.lnd_filter, target.lnd_jd, jd_now)
-            target.mag_recent = make_magrecent(target.all_phot, jd_now)
-            target.link = TNS_URL + target.name
-        return context
 
 
 class TargetListView(PermissionListMixin, FilterView):
