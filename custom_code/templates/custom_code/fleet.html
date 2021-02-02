@@ -1,5 +1,5 @@
 {% if fleet_plot %}
-    <img src="{{ fleet_plot.data.url }}" alt="{{ fleet_plot.get_file_name }}">
+    <img src="{{ fleet_plot.data.url }}" alt="{{ fleet_plot.get_file_name }}" style="max-width:100%">
 {% else %}
     <p>No FLEET diagnostic plot has been produced. Is the target too far south?</p>
 {% endif %}
