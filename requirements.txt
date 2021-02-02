@@ -5,7 +5,7 @@ gunicorn
 django-heroku
 django-storages
 boto3
-astropy==3.2.3
+astropy
 astroplan
 requests_oauthlib
 python-magic
@@ -17,3 +17,4 @@ whitenoise
 sqlalchemy
 dash
 django_plotly_dash
+djangorestframework
