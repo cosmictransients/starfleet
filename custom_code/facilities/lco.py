@@ -27,18 +27,6 @@ FLUX_CONSTANT = (1e-15 * u.erg) / (u.cm ** 2 * u.second * u.angstrom)
 WAVELENGTH_UNITS = u.angstrom
 
 
-class InitialValue:
-    exposure_count = 2
-    block_num = 1
-
-    def __init__(self, filt):
-        self.exposure_time = self.get_values_from_filt(filt)
-
-    def get_values_from_filt(self, filt):
-        initial_exp_times = {'U': 300, 'B': 200, 'V': 120, 'gp': 200, 'rp': 120, 'ip': 120}
-        return initial_exp_times.get(filt, 0)
-
-
 class SnexPhotometricSequenceForm(LCOPhotometricSequenceForm):
     name = forms.CharField()
     ipp_value = forms.FloatField(label='Intra Proposal Priority (IPP factor)',
@@ -47,7 +35,7 @@ class SnexPhotometricSequenceForm(LCOPhotometricSequenceForm):
                                  initial=1.0)
     
     # Rewrite a lot of the form fields to have unique IDs between photometry and spectroscopy
-    filters = ['U', 'B', 'V', 'R', 'I', 'u', 'gp', 'rp', 'ip', 'zs', 'w']
+    filters = ['U', 'B', 'V', 'R', 'I', 'up', 'gp', 'rp', 'ip', 'zs', 'w']
     max_airmass = forms.FloatField(initial=1.6, min_value=0, label='Max Airmass')
     min_lunar_distance = forms.IntegerField(min_value=0, label='Minimum Lunar Distance', initial=20, required=False)
     cadence_frequency = forms.FloatField(required=True, min_value=0.0, initial=3.0, label='')
@@ -60,15 +48,9 @@ class SnexPhotometricSequenceForm(LCOPhotometricSequenceForm):
 
         # Add fields for each available filter as specified in the filters property
         for filter_name in self.filters:
-            self.fields[filter_name] = FilterField(label='', initial=InitialValue(filter_name), required=False)        
+            self.fields[filter_name] = FilterField(label='', required=False)
 
-        # Set default proposal to GSP
-        proposal_choices = self.proposal_choices()
-        initial_proposal = ''
-        for choice in proposal_choices:
-            if 'Global Supernova Project' in choice[1]:
-                initial_proposal = choice
-        self.fields['proposal'] = forms.ChoiceField(choices=proposal_choices, initial=initial_proposal)
+        self.fields['proposal'] = forms.CharField()
     
         # Massage cadence form to be SNEx-styled
         self.fields['name'].label = ''
@@ -89,9 +71,7 @@ class SnexPhotometricSequenceForm(LCOPhotometricSequenceForm):
                     label='Data granted to')
         
         self.fields['instrument_type'] = forms.ChoiceField(choices=self.instrument_choices(), initial=('1M0-SCICAM-SINISTRO', '1.0 meter Sinistro'))
-        #self.fields['name'].widget = forms.HiddenInput()
-        #self.fields['proposal'] = forms.ChoiceField(choices=self.proposal_choices(), label='Proposal')
-        
+
         self.helper.layout = Layout(
             Div(
                 Column('name'),

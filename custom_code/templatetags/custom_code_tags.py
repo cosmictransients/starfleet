@@ -729,7 +729,7 @@ def observation_summary(context, target=None):
                 parameter_string = 'Single ' + str(parameter.get('observation_type', '')).lower() + ' observation of '
 
             if parameter.get('observation_type', '') == 'IMAGING':
-                filters = ['U', 'B', 'V', 'R', 'I', 'u', 'gp', 'rp', 'ip', 'zs', 'w']
+                filters = ['U', 'B', 'V', 'R', 'I', 'up', 'gp', 'rp', 'ip', 'zs', 'w']
                 for f in filters:
                     filter_parameters = parameter.get(f, '')
                     if filter_parameters:
@@ -809,7 +809,7 @@ def scheduling_list(context, observations):
             else:
                 instrument = 'MuSCAT'
 
-            filters = ['U', 'B', 'V', 'R', 'I', 'u', 'gp', 'rp', 'ip', 'zs', 'w']
+            filters = ['U', 'B', 'V', 'R', 'I', 'up', 'gp', 'rp', 'ip', 'zs', 'w']
             for f in filters:
                 filter_parameters = parameter.get(f, '')
                 if filter_parameters and filter_parameters[0] != 0.0:
