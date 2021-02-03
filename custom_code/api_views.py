@@ -84,13 +84,7 @@ class CustomDataProductViewSet(DataProductViewSet):
             dp = DataProduct.objects.get(pk=response.data['id'])
             try:
                 #run_hook('data_product_post_upload', dp)
-                reduced_data = run_custom_data_processor(dp, extras)
-                if not settings.TARGET_PERMISSIONS_ONLY:
-                    for group_name in settings.DEFAULT_GROUPS:#response.data['group']:
-                        group = Group.objects.get(name=group_name)
-                        assign_perm('tom_dataproducts.view_dataproduct', group, dp)
-                        assign_perm('tom_dataproducts.delete_dataproduct', group, dp)
-                        assign_perm('tom_dataproducts.view_reduceddatum', group, reduced_data)
+                run_custom_data_processor(dp, extras)
                 # Make the ReducedDatumExtra row corresponding to this dp
                 upload_extras['data_product_id'] = dp.id
                 reduced_datum_extra = ReducedDatumExtra(
