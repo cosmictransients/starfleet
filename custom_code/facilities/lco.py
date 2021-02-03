@@ -269,8 +269,6 @@ class SnexLCOFacility(LCOFacility):
             headers=self._portal_headers()
         )
         print('Made request')
-        import pdb
-        pdb.set_trace()
         return [r['id'] for r in response.json()['requests']]
 
     def validate_observation(self, observation_payload):
@@ -281,7 +279,5 @@ class SnexLCOFacility(LCOFacility):
             headers=self._portal_headers()
         )
         print('Validating observation')
-        import pdb
-        pdb.set_trace()
         return response.json()['errors']
 
