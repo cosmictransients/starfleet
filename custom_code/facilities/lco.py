@@ -5,7 +5,7 @@ from crispy_forms.bootstrap import PrependedText, AppendedText
 from astropy import units as u
 import datetime
 
-from tom_observations.facilities.lco import LCOPhotometricSequenceForm, LCOSpectroscopicSequenceForm, LCOFacility
+from tom_observations.facilities.lco import LCOPhotometricSequenceForm, LCOSpectroscopicSequenceForm, LCOFacility, make_request
 from tom_observations.widgets import FilterField
 from django.contrib.auth.models import Group
 
