@@ -5,7 +5,7 @@ from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
 from django.views.generic.edit import FormView, UpdateView
 from django.urls import reverse
 
-from tom_targets.views import TargetListView
+from tom_targets.views import TargetListView, TargetDetailView
 from custom_code.models import ScienceTags, TargetTags, ReducedDatumExtra, Papers
 from custom_code.filters import CustomTargetFilter
 from tom_targets.models import TargetList
@@ -40,6 +40,8 @@ from tom_dataproducts.views import DataProductUploadView, DataProductDeleteView
 from tom_dataproducts.models import DataProduct
 from tom_dataproducts.exceptions import InvalidFileFormatException
 from custom_code.processors.data_processor import run_custom_data_processor
+from custom_code.hooks import run_fleet
+import threading
 from guardian.shortcuts import assign_perm
 
 # Create your views here.
@@ -359,4 +361,12 @@ class PaperCreateView(FormView):
             )
         paper.save()
         
+        return HttpResponseRedirect('/targets/{}/'.format(target.id))
+
+
+class RunFleetView(TargetDetailView):
+    def get(self, request, *args, **kwargs):
+        target = Target.objects.get(id=kwargs.get('pk', None))
+        fleet_thread = threading.Thread(target=run_fleet, args=[target])
+        fleet_thread.start()
         return HttpResponseRedirect('/targets/{}/'.format(target.id))

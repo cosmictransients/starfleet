@@ -1,3 +1,7 @@
+<p>
+    <a href="{% url 'custom_code:run-fleet' target.id %}" class="btn btn-primary">Run FLEET</a>
+    FLEET will run in the background. Refresh the page and return to this tab in about a minute.
+</p>
 {% if fleet_plot %}
     <img src="{{ fleet_plot.data.url }}" alt="{{ fleet_plot.get_file_name }}" style="max-width:100%">
 {% else %}

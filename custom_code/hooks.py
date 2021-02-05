@@ -5,6 +5,7 @@ from astropy.coordinates import SkyCoord
 from tom_dataproducts.models import DataProduct, ReducedDatum
 import json
 import os
+import shutil
 from django.core.files import File
 import matplotlib
 matplotlib.use('Agg')  # this must be set before importing FLEET
@@ -35,11 +36,11 @@ def run_fleet(target):
         )
         if created:
             dp.data = File(open(output_filename, 'rb'))
-            os.remove(output_filename)
             logger.info(f'{output_filename} saved')
         else:
-            os.replace(output_filename, dp.data.path)
+            shutil.copy2(output_filename, dp.data.path)
             logger.info(f'{output_filename} replaced')
+        os.remove(output_filename)
         dp.save()
 
         extras = {

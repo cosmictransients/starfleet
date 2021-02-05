@@ -451,7 +451,7 @@ def aladin_collapse(target):
 @register.inclusion_tag('custom_code/fleet.html')
 def get_fleet_plot(target):
     data_product = target.dataproduct_set.filter(product_id=target.name+'_FLEET').last()
-    return {'fleet_plot': data_product}
+    return {'fleet_plot': data_product, 'target': target}
 
 @register.filter
 def photometry(target):
