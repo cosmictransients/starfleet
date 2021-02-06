@@ -1,4 +1,3 @@
-dataclasses
 django
 tomtoolkit
 gunicorn
@@ -10,11 +9,9 @@ astroplan
 requests_oauthlib
 python-magic
 specutils
--e git+https://github.com/dfm/casjobs@master#egg=casjobs
--e git+https://github.com/griffin-h/mastcasjobs@master#egg=mastcasjobs
-dustmaps
 whitenoise
 sqlalchemy
 dash
 django_plotly_dash
 djangorestframework
+git+git://github.com/cosmictransients/FLEET@master#egg=fleet-pipe

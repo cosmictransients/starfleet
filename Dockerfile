@@ -6,6 +6,6 @@ RUN apt-get update && apt-get install -y git libpq-dev gcc gfortran libmagic-dev
 
 COPY . /snex2
 
-RUN pip install --upgrade pip && pip install numpy && pip install -r /snex2/requirements.txt && pip install astropy==3.2.3 && pip install /snex2/FLEET && pip cache purge
+RUN pip install --upgrade pip && pip install numpy && pip install -r /snex2/requirements.txt && pip cache purge
 
 WORKDIR /snex2

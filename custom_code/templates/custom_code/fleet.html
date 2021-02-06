@@ -3,7 +3,9 @@
     FLEET will run in the background. Refresh the page and return to this tab in about a minute.
 </p>
 {% if fleet_plot %}
-    <img src="{{ fleet_plot.data.url }}" alt="{{ fleet_plot.get_file_name }}" style="max-width:100%">
+    <iframe src="{{ fleet_plot.data.url }}" height="100%" width="100%">
+{% elif target.dec <= -32 %}
+    <p>The target is too far south for FLEET.</p>
 {% else %}
-    <p>No FLEET diagnostic plot has been produced. Is the target too far south?</p>
+    <p>No FLEET diagnostic plot has been produced.</p>
 {% endif %}

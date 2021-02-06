@@ -72,10 +72,11 @@ nav {
     font-family: monospace;
 }
 
-@media (min-width: 768px)
-.navbar-expand-md .navbar-nav .dropdown-menu {
+@media (min-width: 768px) {
+  .navbar-expand-md .navbar-nav .dropdown-menu {
     position: absolute;
     z-index: 9999;
+  }
 }
 
 .col-md-12 {
@@ -91,3 +92,10 @@ nav {
   max-width: none;
 }
 
+.tab-pane {
+  height: 100%;
+}
+
+.tab-content {
+  height: 100%;
+}
