@@ -37,7 +37,7 @@ class CustomDataProductViewSet(DataProductViewSet):
         if not User.objects.filter(username=username).exists():
             return Response({'User does not exist'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-        upload_extras = json.loads(request.data['upload_extras'])
+        upload_extras = request.data['upload_extras']
         dp_type = request.data['data_product_type']
         
         request.data['data'] = request.FILES['file']

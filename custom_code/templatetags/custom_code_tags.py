@@ -199,7 +199,7 @@ def lightcurve(context, target):
 
     for rd in datums:
     #for rd in ReducedDatum.objects.filter(target=target, data_type='photometry'):
-        value = json.loads(rd.value)
+        value = rd.value
         if not value:  # empty
             continue
    
@@ -258,7 +258,7 @@ def lightcurve_collapse(target, user):
                                         data_type=settings.DATA_PRODUCT_TYPES['photometry'][0]))
     #for rd in ReducedDatum.objects.filter(target=target, data_type='photometry'): 
     for rd in datums:
-        value = json.loads(rd.value)
+        value = rd.value
         photometry_data.setdefault(value.get('filter', ''), {})
         photometry_data[value.get('filter', '')].setdefault('time', []).append(rd.timestamp)
         photometry_data[value.get('filter', '')].setdefault('magnitude', []).append(value.get('magnitude',None))
@@ -401,7 +401,7 @@ def spectra_collapse(target):
     spectra = []
     spectral_dataproducts = ReducedDatum.objects.filter(target=target, data_type='spectroscopy').order_by('-timestamp')
     for spectrum in spectral_dataproducts:
-        datum = json.loads(spectrum.value)
+        datum = spectrum.value
         wavelength = []
         flux = []
         for key, value in datum.items():
@@ -460,7 +460,7 @@ def photometry(target):
 @register.filter
 def magformat(reduceddatum, digits='1'):
     if reduceddatum and reduceddatum.data_type == 'photometry':
-        phot = json.loads(reduceddatum.value)
+        phot = reduceddatum.value
         magstr = '{{filter}}&nbsp;=&nbsp;{{magnitude:.{digits}f}}'
         return mark_safe(magstr.format(digits=digits).format(**phot))
     else:
@@ -469,7 +469,7 @@ def magformat(reduceddatum, digits='1'):
 @register.filter
 def magerrformat(reduceddatum, digits='1'):
     if reduceddatum and reduceddatum.data_type == 'photometry':
-        phot = json.loads(reduceddatum.value)
+        phot = reduceddatum.value
         magstr = '{{filter}}&nbsp;=&nbsp;{{magnitude:.{digits}f}}&nbsp;&pm;&nbsp;{{error:.{digits}f}}'
         return mark_safe(magstr.format(digits=digits).format(**phot))
     else:
@@ -478,7 +478,7 @@ def magerrformat(reduceddatum, digits='1'):
 @register.filter
 def brightest(phot):
     if phot:
-        mags = [json.loads(point.value)['magnitude'] for point in phot]
+        mags = [point.value['magnitude'] for point in phot]
         return phot[int(np.argmin(mags))]
     else:
         return ''
@@ -581,14 +581,14 @@ def dash_lightcurve(context, target, width, height):
 
     datumquery = ReducedDatum.objects.filter(target=target, data_type='photometry')
     for i in datumquery:
-        datum_value = json.loads(i.value)
+        datum_value = i.value
         if datum_value.get('background_subtracted', '') == True:
             background_subtracted = True
             break
 
     final_background_subtracted = False
     for de in ReducedDatumExtra.objects.filter(target=target, key='upload_extras', data_type='photometry'):
-        de_value = json.loads(de.value)
+        de_value = de.value
         inst = de_value.get('instrument', '')
         used_in = de_value.get('used_in', '')
         group = de_value.get('reducer_group', '')
@@ -605,7 +605,7 @@ def dash_lightcurve(context, target, width, height):
             final_reduction_datumid = de_value.get('data_product_id', '')
 
             datum = ReducedDatum.objects.filter(target=target, data_type='photometry', data_product_id=final_reduction_datumid)
-            datum_value = json.loads(datum.first().value)
+            datum_value = datum.first().value
             if datum_value.get('background_subtracted', '') == True:
                 final_background_subtracted = True
     
@@ -716,9 +716,7 @@ def observation_summary(context, target=None):
 
     parameters = []
     for observation in observations:
-        #parameters.append(json.loads(observation.parameters))
-
-        parameter = json.loads(observation.parameters)
+        parameter = observation.parameters
 
         # First do LCO observations
         if parameter.get('facility', '') == 'LCO':
@@ -785,7 +783,7 @@ def scheduling_list(context, observations):
         target = observation.target
         target_names = observation.target.names
 
-        parameter = json.loads(observation.parameters)
+        parameter = observation.parameters
         if parameter.get('observation_type', '') == 'IMAGING':
             observation_type = 'Phot'
         elif 'SPEC' in parameter.get('observation_type', ''):

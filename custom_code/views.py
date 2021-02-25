@@ -62,7 +62,6 @@ def make_lnd(mag, filt, jd, jd_now):
     return lnd
 
 def make_magrecent(all_phot, jd_now):
-    all_phot = json.loads(all_phot)
     recent_jd = max([all_phot[obs]['jd'] for obs in all_phot])
     recent_phot = [all_phot[obs] for obs in all_phot if
         all_phot[obs]['jd'] == recent_jd][0]
@@ -317,7 +316,7 @@ class CustomDataProductDeleteView(DataProductDeleteView):
         # Delete the ReducedDatumExtra row
         reduced_datum_query = ReducedDatumExtra.objects.filter(data_type='photometry', key='upload_extras')
         for row in reduced_datum_query:
-            value = json.loads(row.value) 
+            value = row.value
             if value.get('data_product_id', '') == int(self.get_object().id):
                 row.delete()
                 break
