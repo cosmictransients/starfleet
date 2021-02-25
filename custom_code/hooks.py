@@ -63,11 +63,12 @@ def fleet_lightcurve(target):
         time = Time(datum['MJD'], format='mjd')
         value = {
             'magnitude': datum['Mag'],
-            'error': datum['MagErr'],
             'telescope': datum['Telescope'],
             'filter': datum['Filter'],
             'upperlimit': datum['UL']
         }
+        if np.isfinite(datum['MagErr']):  # do not let NaN in the database
+            value['error'] = datum['MagErr']
         rd, created = ReducedDatum.objects.get_or_create(
             target=target,
             data_type='photometry',
