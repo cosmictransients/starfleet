@@ -97,9 +97,9 @@ class SnexPhotometricSequenceForm(LCOPhotometricSequenceForm):
         #      and look into implementing a "delay start by" option like in SNEx
         cleaned_data = super().clean()
         now = datetime.datetime.now()
+        window = 1. if cleaned_data['cadence_strategy'] else cleaned_data['cadence_frequency']
         cleaned_data['start'] = datetime.datetime.strftime(now, '%Y-%m-%dT%H:%M:%S')
-        cleaned_data['end'] = datetime.datetime.strftime(now + datetime.timedelta(hours=cleaned_data['cadence_frequency']*24),
-                                                '%Y-%m-%dT%H:%M:%S')
+        cleaned_data['end'] = datetime.datetime.strftime(now + datetime.timedelta(days=window), '%Y-%m-%dT%H:%M:%S')
 
         return cleaned_data
 
@@ -224,9 +224,9 @@ class SnexSpectroscopicSequenceForm(LCOSpectroscopicSequenceForm):
         cleaned_data = super().clean()
         self.cleaned_data['instrument_type'] = '2M0-FLOYDS-SCICAM'  # SNEx only submits spectra to FLOYDS
         now = datetime.datetime.now()
+        window = 1. if cleaned_data['cadence_strategy'] else cleaned_data['cadence_frequency']
         cleaned_data['start'] = datetime.datetime.strftime(now, '%Y-%m-%dT%H:%M:%S')
-        cleaned_data['end'] = datetime.datetime.strftime(now + datetime.timedelta(hours=cleaned_data['cadence_frequency']*24),
-                                                '%Y-%m-%dT%H:%M:%S')
+        cleaned_data['end'] = datetime.datetime.strftime(now + datetime.timedelta(days=window), '%Y-%m-%dT%H:%M:%S')
 
         return cleaned_data
 
