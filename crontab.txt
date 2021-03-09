@@ -1,3 +1,1 @@
-MAILTO=griffin.hosseinzadeh@cfa.harvard.edu
-
-0 14 * * * python /snex2/manage.py runcadencestrategies
+0 * * * * python /snex2/manage.py runcadencestrategies
