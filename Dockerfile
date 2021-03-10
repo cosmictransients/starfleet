@@ -9,5 +9,3 @@ COPY . /snex2
 RUN pip install --upgrade pip && pip install numpy && pip install -r /snex2/requirements.txt && pip cache purge
 
 WORKDIR /snex2
-
-RUN crontab /snex2/crontab.txt
