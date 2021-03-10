@@ -10,4 +10,4 @@ RUN pip install --upgrade pip && pip install numpy && pip install -r /snex2/requ
 
 WORKDIR /snex2
 
-RUN crontab crontab.txt
+RUN crontab /snex2/crontab.txt
