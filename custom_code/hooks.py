@@ -73,7 +73,7 @@ def fleet_lightcurve(target):
             target=target,
             data_type='photometry',
             timestamp=time.datetime,
-            value=json.dumps(value),
+            value=value,
             source_name=datum['Source']
         )
         rd.save()
