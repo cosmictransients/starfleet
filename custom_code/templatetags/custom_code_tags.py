@@ -573,7 +573,7 @@ def dash_lightcurve(context, target, width, height):
     request = context['request']
     
     # Get initial choices and values for some dash elements
-    telescopes = ['LCO']
+    telescopes = []
     reducer_groups = []
     papers_used_in = []
     final_reduction = False
@@ -609,7 +609,7 @@ def dash_lightcurve(context, target, width, height):
             if datum_value.get('background_subtracted', '') == True:
                 final_background_subtracted = True
     
-    reducer_group_options = [{'label': 'LCO', 'value': ''}]
+    reducer_group_options = []
     reducer_group_options.extend([{'label': k, 'value': k} for k in reducer_groups])
     reducer_groups.append('')
     

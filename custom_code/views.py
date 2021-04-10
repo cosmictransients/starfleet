@@ -274,7 +274,7 @@ class CustomDataProductUploadView(DataProductUploadView):
                     target = target,
                     data_type = dp_type,
                     key = 'upload_extras',
-                    value = json.dumps(rdextra_value)
+                    value = rdextra_value
                 )
                 reduced_datum_extra.save()
 
@@ -289,7 +289,7 @@ class CustomDataProductUploadView(DataProductUploadView):
             except InvalidFileFormatException as iffe:
                 ReducedDatum.objects.filter(data_product=dp).delete()
                 dp.delete()
-                ReducedDatumExtra.objects.filter(target=target, value=json.dumps(rdextra_value)).delete()
+                ReducedDatumExtra.objects.filter(target=target, value=rdextra_value).delete()
                 messages.error(
                     self.request,
                     'File format invalid for file {0} -- error was {1}'.format(str(dp), iffe)
@@ -297,7 +297,7 @@ class CustomDataProductUploadView(DataProductUploadView):
             except Exception as e:
                 ReducedDatum.objects.filter(data_product=dp).delete()
                 dp.delete()
-                ReducedDatumExtra.objects.filter(target=target, value=json.dumps(rdextra_value)).delete()
+                ReducedDatumExtra.objects.filter(target=target, value=rdextra_value).delete()
                 messages.error(self.request, 'There was a problem processing your file: {0}'.format(str(dp)))
                 print(e)
         if successful_uploads:
