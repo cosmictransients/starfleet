@@ -4,7 +4,7 @@ from tom_dataproducts.forms import DataProductUploadForm
 from tom_dataproducts.models import DataProduct
 from guardian.shortcuts import assign_perm, get_groups_with_perms, remove_perm
 from django import forms
-from custom_code.models import ScienceTags, TargetTags, Papers
+from custom_code.models import ScienceTags, TargetTags, Papers, ReducedDatumExtra
 from django.conf import settings
 from django.db.models.functions import Lower
 from django.core.exceptions import ValidationError
@@ -45,52 +45,21 @@ class CustomTargetCreateForm(SiderealTargetCreateForm):
         return instance
 
 
-class ReducerGroupWidget(forms.widgets.MultiWidget):
+def choices_from_reduced_datum_extras(key):
+    """Return choices for a dropdown menu based on a certain keyword in the ReducedDatumExtra table"""
+    values = {rde.value.get(key) for rde in ReducedDatumExtra.objects.all()}
+    return [(r, r) for r in sorted(values)]
+
+
+class SelectOrOtherWidget(forms.widgets.MultiWidget):
+    choices = ()
+
     def __init__(self, attrs=None):
-        choices = [('LCO', 'LCO'), ('UC Davis', 'UC Davis'), ('Arizona', 'Arizona')]
-        help_text="Or add another group"
-        widget = (forms.widgets.RadioSelect(choices=choices),
-                  forms.widgets.TextInput(attrs={'placeholder': help_text})
-                )
-        super(ReducerGroupWidget, self).__init__(widget, attrs=attrs)
-
-    def decompress(self, value):
-        if value:
-            if value in [x[0] for x in self.choices]:
-                return [value, ""]
-            else:
-                return ["", value]
-        else:
-            return ["", ""]
-
-
-class InstrumentWidget(forms.widgets.MultiWidget):
-    def __init__(self, attrs=None):
-        choices = [('LCO', 'LCO'), ('Swift', 'Swift'), ('Gaia', 'Gaia'), ('TESS', 'TESS')]
-        help_text="Or add another instrument"
-        widget = (forms.widgets.RadioSelect(choices=choices),
-                  forms.widgets.TextInput(attrs={'placeholder': help_text})
-                )
-        super(InstrumentWidget, self).__init__(widget, attrs=attrs)
-
-    def decompress(self, value):
-        if value:
-            if value in [x[0] for x in self.choices]:
-                return [value, ""]
-            else:
-                return ["", value]
-        else:
-            return ["", ""]
-
-
-class TemplateSourceWidget(forms.widgets.MultiWidget):
-    def __init__(self, attrs=None):
-        choices = [('LCO', 'LCO'), ('SDSS', 'SDSS')]
-        help_text="Other"
-        widget = (forms.widgets.RadioSelect(choices=choices),
-                  forms.widgets.TextInput(attrs={'placeholder': help_text})
-                )
-        super(TemplateSourceWidget, self).__init__(widget, attrs=attrs)
+        widget = (
+            forms.widgets.Select(choices=self.choices),
+            forms.widgets.TextInput(attrs={'placeholder': 'or add another...'})
+        )
+        super().__init__(widget, attrs=attrs)
 
     def decompress(self, value):
         if value:
@@ -105,9 +74,9 @@ class TemplateSourceWidget(forms.widgets.MultiWidget):
 class MultiField(forms.MultiValueField):
 
     def __init__(self, required=False, widget=None, label=None, initial=None, help_text=None, choices=None):
-        field = (forms.ChoiceField(choices=choices, required=False), forms.CharField(required=False))
-        super(MultiField, self).__init__(required=False, fields=field, widget=widget, label=label, initial=initial, help_text=help_text)
-
+        widget.choices = [('', '')] + choices
+        field = (forms.ChoiceField(required=False), forms.CharField(required=False))
+        super(MultiField, self).__init__(required=required, fields=field, widget=widget, label=label, initial=initial, help_text=help_text)
 
     def compress(self, data_list):
         if not data_list:
@@ -126,13 +95,8 @@ class CustomDataProductUploadForm(DataProductUploadForm):
     )
 
     instrument = MultiField(
-        choices=[('LCO', 'LCO'), 
-                 ('Swift', 'Swift'), 
-                 ('Gaia', 'Gaia'),
-                 ('Tess', 'Tess')
-        ],
-        widget=InstrumentWidget,
-        help_text="Or add another instrument"
+        choices=choices_from_reduced_datum_extras('instrument'),
+        widget=SelectOrOtherWidget,
     )
 
     background_subtracted = forms.BooleanField(
@@ -152,24 +116,16 @@ class CustomDataProductUploadForm(DataProductUploadForm):
         choices=[('LCO', 'LCO'),
                  ('SDSS', 'SDSS'),
         ],
-        #widget=TemplateSourceWidget,
+        #widget=SelectOrOtherWidget,
         widget=forms.RadioSelect(),
         required=False
     )
 
     reducer_group = MultiField(
-        choices=[('LCO', 'LCO'),
-                 ('UC Davis', 'UC Davis'),
-                 ('U of A', 'U of A')
-        ],
-        help_text="Or add another group",
-        widget=ReducerGroupWidget
+        choices=choices_from_reduced_datum_extras('reducer_group'),
+        widget=SelectOrOtherWidget
     )
 
-    #used_in = forms.ChoiceField(
-    #    choices=[('', '')],
-    #    required=False
-    #)
     used_in = forms.ModelChoiceField(
         queryset=Papers.objects.all(),
         required=False

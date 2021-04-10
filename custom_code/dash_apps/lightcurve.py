@@ -8,7 +8,7 @@ from tom_dataproducts.models import ReducedDatum
 from custom_code.models import ReducedDatumExtra
 
 app = DjangoDash(name='Lightcurve')
-telescopes = ['LCO']
+telescopes = []
 reducer_groups = []
 papers_used_in = []
 app.layout = html.Div([
@@ -102,8 +102,8 @@ app.layout = html.Div([
     html.H3('Data from Group'),
     dcc.Checklist(
         id='reducer-group-checklist',
-        options=[{'label': 'LCO', 'value': ''}],
-        value=['']
+        options=[],
+        value=[]
     ),
     html.Hr(),
     html.Div(
