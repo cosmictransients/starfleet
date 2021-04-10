@@ -79,12 +79,12 @@ app.layout = html.Div([
     ),
     html.Hr(),
     html.H3('Reduction Type'),
-    dcc.RadioItems(
-        id='reduction-type-radio',
+    dcc.Checklist(
+        id='reduction-type-checklist',
         options=[{'label': 'Automatic', 'value': ''},
                  {'label': 'Manual', 'value': 'manual'}
         ],
-        value=''
+        value=['', 'manual']
     ),
     dcc.Checklist(
         id='final-reduction-checklist',
@@ -112,31 +112,31 @@ app.layout = html.Div([
 
 #Only show manually reduced data if subtracted is selected
 @app.callback(
-        Output('reduction-type-radio', 'value'),
+        Output('reduction-type-checklist', 'value'),
         [Input('subtracted-radio', 'value'),
-         State('reduction-type-radio', 'value')])
+         State('reduction-type-checklist', 'value')])
 def update_reduction_type(selected_subtraction, old_reduction_type):
     if selected_subtraction == 'Subtracted':
-        return 'manual'
+        return ['manual']
     return old_reduction_type
 
 #Unselect final reduction if automatically reduced data is selected
 @app.callback(
         Output('final-reduction-checklist', 'value'),
-        [Input('reduction-type-radio', 'value'),
+        [Input('reduction-type-checklist', 'value'),
          State('final-reduction-checklist', 'value')])
 def update_final_reduction(selected_reduction, old_final_value):
-    if not selected_reduction:
+    if '' in selected_reduction:
         return ''
     return old_final_value
 
 #Select unsubtracted data if automatic subtraction is selected
 @app.callback(
         Output('subtracted-radio', 'value'),
-        [Input('reduction-type-radio', 'value'),
+        [Input('reduction-type-checklist', 'value'),
          State('subtracted-radio', 'value')])
 def update_subtracted_type(selected_reduction, old_subtracted_type):
-    if not selected_reduction:
+    if '' in selected_reduction:
         return 'Unsubtracted'
     return old_subtracted_type
 
@@ -181,7 +181,7 @@ def update_template_value(selected_subtraction):
          Input('algorithm-checklist', 'value'),
          Input('template-checklist', 'value'),
          Input('photometry-type-checklist', 'value'),
-         Input('reduction-type-radio', 'value'),
+         Input('reduction-type-checklist', 'value'),
          Input('final-reduction-checklist', 'value'),
          Input('papers-dropdown', 'value'),
          Input('reducer-group-checklist', 'value'),
@@ -256,12 +256,12 @@ def update_graph(selected_telescope, subtracted_value, selected_algorithm, selec
 
             ### Get subtracted or unsubtracted data
             if value.get('background_subtracted', '') == True:
-                if value.get('subtraction_algorithm', '') in selected_algorithm and value.get('template_source', '') in selected_template and reduction_type == 'manual':
+                if value.get('subtraction_algorithm', '') in selected_algorithm and value.get('template_source', '') in selected_template and 'manual' in reduction_type:
                     subtracted_photometry_data.setdefault(value.get('filter', ''), {})
                     subtracted_photometry_data[value.get('filter', '')].setdefault('time', []).append(rd.timestamp)
                     subtracted_photometry_data[value.get('filter', '')].setdefault('magnitude', []).append(value.get('magnitude',None))
                     subtracted_photometry_data[value.get('filter', '')].setdefault('error', []).append(value.get('error', None))
-            elif value.get('reduction_type', '')==reduction_type:
+            elif value.get('reduction_type', '') in reduction_type:
                 photometry_data.setdefault(value.get('filter', ''), {})
                 photometry_data[value.get('filter', '')].setdefault('time', []).append(rd.timestamp)
                 photometry_data[value.get('filter', '')].setdefault('magnitude', []).append(value.get('magnitude',None))
