@@ -232,8 +232,8 @@ FACILITIES = {
     }
 }
 
-# Define extra target fields here. Types can be any of "number", "st    ring", "boolean" or "datetime"
-# See https://tomtoolkit.github.io/docs/target_fields for documentat    ion on this feature
+# Define extra target fields here. Types can be any of "number", "string", "boolean" or "datetime"
+# See https://tomtoolkit.github.io/docs/target_fields for documentation on this feature
 # For example:
 # EXTRA_FIELDS = [
 #     {'name': 'redshift', 'type': 'number'},
@@ -260,7 +260,8 @@ OPEN_URLS = []
 HOOKS = {
     'target_post_save': 'custom_code.hooks.target_post_save',
     'observation_change_state': 'tom_common.hooks.observation_change_state',
-    'targetextra_post_save': 'custom_code.hooks.targetextra_post_save'
+    'targetextra_post_save': 'custom_code.hooks.targetextra_post_save',
+    'multiple_data_products_post_save': 'custom_code.hooks.multiple_data_products_post_save',
 }
 
 TOM_ALERT_CLASSES = [
@@ -324,6 +325,10 @@ TARGET_CLASSIFICATIONS = ['Afterglow', 'AGN', 'Ca-rich', 'CV', 'Galaxy', 'ILRN',
 TARGET_CLASSIFICATIONS += [classification + '?' for classification in TARGET_CLASSIFICATIONS]
 
 X_FRAME_OPTIONS = 'ALLOWALL'
+
+AUTO_THUMBNAILS = False
+THUMBNAIL_MAX_SIZE = (200, 200)
+THUMBNAIL_DEFAULT_SIZE = (200, 200)
 
 HINTS_ENABLED = False
 HINT_LEVEL = 20

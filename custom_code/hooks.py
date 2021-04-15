@@ -1,9 +1,8 @@
-import requests
 import logging
-from astropy.time import Time, TimezoneInfo
+from astropy.time import Time
 from astropy.coordinates import SkyCoord
 from tom_dataproducts.models import DataProduct, ReducedDatum
-import json
+from custom_code.models import ReducedDatumExtra
 import os
 import shutil
 from django.core.files import File
@@ -11,6 +10,7 @@ import matplotlib
 matplotlib.use('Agg')  # this must be set before importing FLEET
 from FLEET.classify import predict_SLSN
 from FLEET.transient import get_transient_info, generate_lightcurve, ignore_data
+from spikepipe.spikepipe import load_catalog, PS1_CATALOG_PATH, preprocess_lco_image, extract_photometry
 import numpy as np
 import threading
 
@@ -119,3 +119,58 @@ def target_post_save(target, created):
         fleet_lightcurve(target)
         fleet_thread = threading.Thread(target=run_fleet, args=[target, False, False, False, False])
         fleet_thread.start()
+
+
+def multiple_data_products_post_save(dps):
+    logger.info(f'Running post save hook for multiple DataProducts: {dps}')
+
+    for dp in dps:
+        if dp.data.path.endswith('-e91.fits.fz'):
+            logger.info(f'Starting spikepipe on {dp}')
+            spikey_thread = threading.Thread(target=run_spikepipe, args=[dp])
+            spikey_thread.start()
+        elif dp.data.path.endswith('.tar'):
+            logger.info(f'Saving extracted spectrum from {dp}')
+            # TODO: unpack the tar file and save the extracted spectrum
+        else:
+            logger.info(f'{dp} has no post save hook')
+
+
+def run_spikepipe(data_product):
+    target_coords = SkyCoord(data_product.target.ra, data_product.target.dec, unit='deg')
+    catalog, catalog_coords, target = load_catalog(PS1_CATALOG_PATH, target_coords)
+    ccddata = preprocess_lco_image(data_product.data.path, catalog_coords)
+    catalog['catalog_mag'] = catalog[ccddata.meta['FILTER'][0] + 'MeanPSFMag']
+    datum = extract_photometry(ccddata, catalog, catalog_coords, target)
+
+    time = Time(datum['MJD'], format='mjd')
+    value = {
+        'magnitude': datum['mag'],
+        'error': datum['dmag'],
+        'telescope': 'Las Cumbres',
+        'filter': datum['filter'][0],
+    }
+    rd, created = ReducedDatum.objects.get_or_create(
+        target=data_product.target,
+        data_product=data_product,
+        data_type='photometry',
+        timestamp=time.datetime,
+        value=value,
+        source_name='spikepipe'
+    )
+    rd.save()
+
+    rdextra_value = {
+        'data_product_id': data_product.id,
+        'photometry_type': 'Aperture',
+        'zp': datum['zp'],
+        'dzp': datum['dzp'],
+        'instrument': datum['telescope'],
+    }
+    reduced_datum_extra = ReducedDatumExtra(
+        target=data_product.target,
+        data_type='photometry',
+        key='upload_extras',
+        value=rdextra_value
+    )
+    reduced_datum_extra.save()
