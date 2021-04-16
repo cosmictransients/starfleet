@@ -47,7 +47,7 @@ class CustomTargetCreateForm(SiderealTargetCreateForm):
 
 def choices_from_reduced_datum_extras(key):
     """Return choices for a dropdown menu based on a certain keyword in the ReducedDatumExtra table"""
-    values = {rde.value.get(key) for rde in ReducedDatumExtra.objects.all()}
+    values = {rde.value[key] for rde in ReducedDatumExtra.objects.all() if key in rde.value}
     return [(r, r) for r in sorted(values)]
 
 
