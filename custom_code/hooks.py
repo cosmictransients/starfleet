@@ -1,7 +1,9 @@
 import logging
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
+from astropy.io import fits
 from tom_dataproducts.models import DataProduct, ReducedDatum
+from custom_code.processors.data_processor import run_custom_data_processor
 from custom_code.models import ReducedDatumExtra
 import os
 import shutil
@@ -13,6 +15,7 @@ from FLEET.transient import get_transient_info, generate_lightcurve, ignore_data
 from spikepipe.spikepipe import load_catalog, PS1_CATALOG_PATH, preprocess_lco_image, extract_photometry
 import numpy as np
 import threading
+import tarfile
 
 from sqlalchemy import create_engine, pool
 from sqlalchemy.orm import sessionmaker
@@ -129,9 +132,20 @@ def multiple_data_products_post_save(dps):
             logger.info(f'Starting spikepipe on {dp}')
             spikey_thread = threading.Thread(target=run_spikepipe, args=[dp])
             spikey_thread.start()
-        elif dp.data.path.endswith('.tar'):
+        elif dp.data.path.endswith('.tar.gz'):
             logger.info(f'Saving extracted spectrum from {dp}')
-            # TODO: unpack the tar file and save the extracted spectrum
+            with tarfile.open(dp.data.path) as f:
+                for member in f.getmembers():
+                    if member.name.endswith('_2df_ex.fits'):
+                        extracted_spectrum = DataProduct(
+                            target=dp.target,
+                            observation_record=dp.observation_record,
+                            data_product_type='spectroscopy',
+                            data=File(f.extractfile(member), name=member.name)
+                        )
+                        extracted_spectrum.save()
+                        fits.setval(extracted_spectrum.data.path, 'ORIGIN', 'LCOGT')  # needed for SpectroscopyProcessor
+                        run_custom_data_processor(extracted_spectrum, {})
         else:
             logger.info(f'{dp} has no post save hook')
 
