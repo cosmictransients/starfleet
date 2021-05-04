@@ -144,7 +144,7 @@ def multiple_data_products_post_save(dps):
                             data=File(f.extractfile(member), name=member.name)
                         )
                         extracted_spectrum.save()
-                        fits.setval(extracted_spectrum.data.path, 'ORIGIN', 'LCOGT')  # needed for SpectroscopyProcessor
+                        fits.setval(extracted_spectrum.data.path, 'ORIGIN', value='LCOGT')  # for SpectroscopyProcessor
                         run_custom_data_processor(extracted_spectrum, {})
         else:
             logger.info(f'{dp} has no post save hook')

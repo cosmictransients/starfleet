@@ -261,3 +261,5 @@ class SnexLCOFacility(LCOFacility):
         print('Validating observation')
         return response.json()['errors']
 
+    def get_date_obs(self, header):
+        return self.get_date_obs_from_fits_header(header)
