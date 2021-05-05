@@ -398,21 +398,10 @@ def spectra_plot(target, dataproduct=None):
 
 @register.inclusion_tag('custom_code/spectra_collapse.html')
 def spectra_collapse(target):
-    spectra = []
     spectral_dataproducts = ReducedDatum.objects.filter(target=target, data_type='spectroscopy').order_by('-timestamp')
-    for spectrum in spectral_dataproducts:
-        datum = spectrum.value
-        wavelength = []
-        flux = []
-        for key, value in datum.items():
-            wavelength.append(float(value['wavelength']))
-            flux.append(float(value['flux']))
-        spectra.append((wavelength, flux))
     plot_data = [
-        go.Scatter(
-            x=spectrum[0],
-            y=spectrum[1]
-        ) for spectrum in spectra]
+        go.Scatter(x=spectrum.value['wavelength'], y=spectrum.value['flux']) for spectrum in spectral_dataproducts
+    ]
     layout = go.Layout(
         height=200,
         width=250,
@@ -434,10 +423,10 @@ def spectra_collapse(target):
         plot_bgcolor='white'
     )
     if plot_data:
-      return {
-          'target': target,
-          'plot': offline.plot(go.Figure(data=plot_data, layout=layout), output_type='div', show_link=False, config={'staticPlot': True}, include_plotlyjs='cdn')
-      }
+        return {
+            'target': target,
+            'plot': offline.plot(go.Figure(data=plot_data, layout=layout), output_type='div', show_link=False, config={'staticPlot': True}, include_plotlyjs='cdn')
+        }
     else:
         return {
             'target': target,
