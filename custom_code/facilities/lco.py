@@ -86,21 +86,13 @@ class SnexPhotometricSequenceForm(LCOPhotometricSequenceForm):
 
     def clean(self):
         """
-        This clean method does the following:
-            - Adds a start time of "right now", as the photometric sequence form does not allow for specification
-              of a start time.
-            - Adds an end time that corresponds with the cadence frequency
-            - Adds the cadence strategy to the form if "repeat" was the selected "cadence_type". If "once" was
-              selected, the observation is submitted as a single observation.
+        Sets "end" to correspond to 1-day window for cadenced requests, cadence_frequency for one-time requests
         """
-        #TODO: Make sure that my conversion from days to hours works,
-        #      and look into implementing a "delay start by" option like in SNEx
+        #TODO: look into implementing a "delay start by" option like in SNEx
         cleaned_data = super().clean()
-        now = datetime.datetime.now()
-        window = 1. if cleaned_data['cadence_strategy'] else cleaned_data['cadence_frequency']
-        cleaned_data['start'] = datetime.datetime.strftime(now, '%Y-%m-%dT%H:%M:%S')
-        cleaned_data['end'] = datetime.datetime.strftime(now + datetime.timedelta(days=window), '%Y-%m-%dT%H:%M:%S')
-
+        start = datetime.datetime.fromisoformat(cleaned_data['start'])
+        window = datetime.timedelta(days=1. if cleaned_data['cadence_strategy'] else cleaned_data['cadence_frequency'])
+        cleaned_data['end'] = (start + window).isoformat()
         return cleaned_data
 
     def layout(self):
