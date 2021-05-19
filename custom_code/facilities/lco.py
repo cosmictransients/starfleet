@@ -163,71 +163,18 @@ class SnexSpectroscopicSequenceForm(LCOSpectroscopicSequenceForm):
     exposure_time = forms.IntegerField(min_value=1,
                                      widget=forms.TextInput(attrs={'placeholder': 'Seconds'}),
                                      initial=1800)
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        # Massage cadence form to be SNEx-styled
-        self.fields['filter'] = forms.ChoiceField(choices=self.filter_choices(), 
-                                                  label='Slit',
-                                                  initial=('slit_2.0as', '2.0 arcsec slit'))
-        self.fields['name'].label = ''
-        self.fields['name'].widget.attrs['placeholder'] = 'Name'
-        self.fields['min_lunar_distance'].widget.attrs['placeholder'] = 'Degrees'
-        self.fields['cadence_strategy'] = forms.ChoiceField(
-            choices=[('', 'Once in the next'), ('ResumeCadenceAfterFailureStrategy', 'Repeating every')],
-            required=False,
-            label=''
-        )
-        self.fields['instrument_type'] = forms.ChoiceField(choices=self.instrument_choices(),
-                                                           required=False,
-                                                           initial='2M0-FLOYDS-SCICAM',
-                                                           widget=forms.HiddenInput())
-
-        # Set default proposal to GSP
-        proposal_choices = self.proposal_choices()
-        initial_proposal = ''
-        for choice in proposal_choices:
-            if 'Global Supernova Project' in choice[1]:
-                initial_proposal = choice
-        self.fields['proposal'] = forms.ChoiceField(choices=proposal_choices, initial=initial_proposal)
-
-        # Remove start and end because those are determined by the cadence
-        for field_name in ['start', 'end']:
-            if self.fields.get(field_name):
-                #TODO: Figure out why start and end aren't fields sometimes
-                self.fields.pop(field_name)
-        if self.fields.get('groups'):
-            self.fields['groups'].label = 'Data granted to'
-        
-        self.helper.layout = Layout(
-            Div(
-                Column('name'),
-                Column('cadence_strategy'),
-                Column(AppendedText('cadence_frequency', 'Days')),
-                css_class='form-row'
-            ),
-            Layout('facility', 'target_id', 'observation_type'),
-            self.layout(),
-            self.button_layout()
-        )
 
     def clean(self):
         """
         This clean method does the following:
-            - Hardcodes instrument type as "2M0-FLOYDS-SCICAM" because it's the only instrument this form uses
-            - Adds a start time of "right now", as the spectroscopic sequence form does not allow for specification
-              of a start time.
-            - Adds an end time that corresponds with the cadence frequency
-            - Adds the cadence strategy to the form if "repeat" was the selected "cadence_type". If "once" was
-              selected, the observation is submitted as a single observation.
+            - Hardcodes filter as "slit_2.0as" because it's the only slit this form uses
+            - Sets "end" to correspond to 1-day window for cadenced requests, cadence_frequency for one-time requests
         """
         cleaned_data = super().clean()
-        self.cleaned_data['instrument_type'] = '2M0-FLOYDS-SCICAM'  # SNEx only submits spectra to FLOYDS
-        now = datetime.datetime.now()
-        window = 1. if cleaned_data['cadence_strategy'] else cleaned_data['cadence_frequency']
-        cleaned_data['start'] = datetime.datetime.strftime(now, '%Y-%m-%dT%H:%M:%S')
-        cleaned_data['end'] = datetime.datetime.strftime(now + datetime.timedelta(days=window), '%Y-%m-%dT%H:%M:%S')
-
+        self.cleaned_data['filter'] = 'slit_2.0as'
+        start = datetime.datetime.fromisoformat(cleaned_data['start'])
+        window = datetime.timedelta(days=1. if cleaned_data['cadence_strategy'] else cleaned_data['cadence_frequency'])
+        cleaned_data['end'] = (start + window).isoformat()
         return cleaned_data
 
 

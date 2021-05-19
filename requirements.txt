@@ -1,5 +1,5 @@
 django
-tomtoolkit==2.7.0a2
+tomtoolkit==2.6.6
 gunicorn
 django-heroku
 django-storages

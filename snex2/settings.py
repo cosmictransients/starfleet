@@ -287,6 +287,10 @@ TOM_HARVESTER_CLASSES = [
     'tom_catalogs.harvesters.ned.NEDHarvester',
     ]
 
+TOM_CADENCE_STRATEGIES = [
+    'custom_code.cadences.resume_cadence_after_failure.ResumeCadenceAfterFailureStrategy',
+]
+
 DATA_TYPES = (
     ('SPECTROSCOPY', 'Spectroscopy'),
     ('PHOTOMETRY', 'Photometry')
