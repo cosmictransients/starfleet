@@ -28,28 +28,19 @@ WAVELENGTH_UNITS = u.angstrom
 
 
 class SnexPhotometricSequenceForm(LCOPhotometricSequenceForm):
-    name = forms.CharField()
-    ipp_value = forms.FloatField(label='Intra Proposal Priority (IPP factor)',
-                                 min_value=0.5,
-                                 max_value=2,
-                                 initial=1.0)
-    
-    # Rewrite a lot of the form fields to have unique IDs between photometry and spectroscopy
     filters = ['U', 'B', 'V', 'R', 'I', 'up', 'gp', 'rp', 'ip', 'zs', 'w']
     max_airmass = forms.FloatField(initial=1.6, min_value=0, label='Max Airmass')
     min_lunar_distance = forms.IntegerField(min_value=0, label='Minimum Lunar Distance', initial=20, required=False)
     cadence_frequency = forms.FloatField(required=True, min_value=0.0, initial=3.0, label='')
-    ipp_value = forms.FloatField(label='IPP', min_value=0.5, max_value=2.0, initial=1.0)
-    observation_mode = forms.ChoiceField(choices=(('NORMAL', 'Normal'), ('RAPID_RESPONSE', 'Rapid-Response'), ('TIME_CRITICAL', 'Time-Critical')), label='Observation Mode')
-    
 
     def __init__(self, *args, **kwargs):
-        super(LCOPhotometricSequenceForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
-        # Add fields for each available filter as specified in the filters property
+        # Remove labels from several filter fields
         for filter_name in self.filters:
             self.fields[filter_name] = FilterField(label='', required=False)
 
+        # Do not give choices for proposals
         self.fields['proposal'] = forms.CharField()
     
         # Massage cadence form to be SNEx-styled
@@ -61,14 +52,8 @@ class SnexPhotometricSequenceForm(LCOPhotometricSequenceForm):
             label=''
         )
 
-        if not settings.TARGET_PERMISSIONS_ONLY:
-            self.fields['groups'] = forms.ModelMultipleChoiceField(
-                    Group.objects.none(), 
-                    required=False,
-                    widget=forms.CheckboxSelectMultiple, 
-                    label='Data granted to')
-        
-        self.fields['instrument_type'] = forms.ChoiceField(choices=self.instrument_choices(), initial=('1M0-SCICAM-SINISTRO', '1.0 meter Sinistro'))
+        self.fields['instrument_type'] = forms.ChoiceField(choices=self.instrument_choices(),
+                                                           initial=('1M0-SCICAM-SINISTRO', '1.0 meter Sinistro'))
 
         self.helper.layout = Layout(
             Div(
@@ -145,14 +130,59 @@ class SnexSpectroscopicSequenceForm(LCOSpectroscopicSequenceForm):
     acquisition_radius = forms.FloatField(min_value=0, required=False, initial=5.0)
     guider_exposure_time = forms.FloatField(min_value=0, initial=10.0)
     name = forms.CharField()
-    ipp_value = forms.FloatField(label='Intra Proposal Priority (IPP factor)',
-                                 min_value=0.5,
-                                 max_value=2,
-                                 initial=1.0)
     min_lunar_distance = forms.IntegerField(min_value=0, label='Minimum Lunar Distance', initial=20, required=False)
     exposure_time = forms.IntegerField(min_value=1,
-                                     widget=forms.TextInput(attrs={'placeholder': 'Seconds'}),
-                                     initial=1800)
+                                       widget=forms.TextInput(attrs={'placeholder': 'Seconds'}),
+                                       initial=1800)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields['proposal'] = forms.CharField()
+
+        self.fields['filter'].label = 'Slit'
+
+        self.helper.layout = Layout(
+            Div(
+                Column('name'),
+                Column('cadence_strategy'),
+                Column(AppendedText('cadence_frequency', 'Days')),
+                css_class='form-row'
+            ),
+            Layout('facility', 'target_id', 'observation_type'),
+            self.layout(),
+            self.button_layout()
+        )
+
+    def layout(self):
+        if settings.TARGET_PERMISSIONS_ONLY:
+            groups = Div()
+        else:
+            groups = Row('groups')
+
+        return Row(
+            Div(
+                Row('exposure_time'),
+                Row('filter'),
+                Row('acquisition_radius'),
+                Row('guider_mode'),
+                Row('guider_exposure_time'),
+                css_class='col-md-6'
+            ),
+            Div(
+                Row('max_airmass'),
+                Row(
+                    PrependedText('min_lunar_distance', '>')
+                ),
+                Row('instrument_type'),
+                Row('proposal'),
+                Row('observation_mode'),
+                Row('ipp_value'),
+                groups,
+                css_class='col-md-6'
+            ),
+            css_class='form-row'
+        )
 
     def clean(self):
         """
