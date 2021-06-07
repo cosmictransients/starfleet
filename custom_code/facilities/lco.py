@@ -42,7 +42,7 @@ class SnexPhotometricSequenceForm(LCOPhotometricSequenceForm):
 
         # Do not give choices for proposals
         self.fields['proposal'] = forms.CharField()
-    
+
         # Massage cadence form to be SNEx-styled
         self.fields['name'].label = ''
         self.fields['name'].widget.attrs['placeholder'] = 'Name'
@@ -174,7 +174,7 @@ class SnexSpectroscopicSequenceForm(LCOSpectroscopicSequenceForm):
                 Row(
                     PrependedText('min_lunar_distance', '>')
                 ),
-                Row('instrument_type'),
+                Row('site'),
                 Row('proposal'),
                 Row('observation_mode'),
                 Row('ipp_value'),
