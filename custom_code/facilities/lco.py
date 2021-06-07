@@ -60,9 +60,7 @@ class SnexPhotometricSequenceForm(LCOPhotometricSequenceForm):
             required=False,
             label=''
         )
-        for field_name in ['exposure_time', 'exposure_count', 'start', 'end', 'filter']:
-            self.fields.pop(field_name)
-        
+
         if not settings.TARGET_PERMISSIONS_ONLY:
             self.fields['groups'] = forms.ModelMultipleChoiceField(
                     Group.objects.none(), 
