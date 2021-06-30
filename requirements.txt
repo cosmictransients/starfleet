@@ -14,6 +14,6 @@ sqlalchemy
 dash
 django_plotly_dash
 djangorestframework
-git+git://github.com/cosmictransients/FLEET@master#egg=fleet-pipe
+git+git://github.com/gmzsebastian/FLEET@master#egg=fleet-pipe
 git+git://github.com/griffin-h/spikepipe@starfleet#egg=spikepipe
 ipython
